@@ -63,7 +63,10 @@ class MainActivity : AppCompatActivity() {
         }
         openAlbumLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-                originImage.setImageURI(uri)
+                originImage.apply {
+                    setPadding(0, 0, 0, 0)
+                    setImageURI(uri)
+                }
                 val bitmap = AlbumUtil.uriToBitmap(this, uri)
                 AlbumUtil.addBitmapToAlbum(
                     this, bitmap
