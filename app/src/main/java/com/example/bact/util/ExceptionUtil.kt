@@ -10,6 +10,7 @@ object ExceptionUtil {
         try {
             action()
         } catch (e: Throwable) {
+            Log.d(TAG, e.toString())
         }
     }
 

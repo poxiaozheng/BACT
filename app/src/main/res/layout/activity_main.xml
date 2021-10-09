@@ -98,7 +98,7 @@
         app:layout_constraintTop_toBottomOf="@+id/multipleTextView" />
 
     <TextView
-        android:id="@+id/noiseLevel"
+        android:id="@+id/noiseGrade"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -121,7 +121,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView4X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/noiseLevel" />
+        app:layout_constraintTop_toBottomOf="@+id/noiseGrade" />
 
     <TextView
         android:id="@+id/textViewNoise2"
@@ -135,7 +135,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView8X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView2X"
-        app:layout_constraintTop_toBottomOf="@+id/noiseLevel" />
+        app:layout_constraintTop_toBottomOf="@+id/noiseGrade" />
 
     <TextView
         android:id="@+id/textViewNoise3"
@@ -149,7 +149,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView16X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView4X"
-        app:layout_constraintTop_toBottomOf="@+id/noiseLevel" />
+        app:layout_constraintTop_toBottomOf="@+id/noiseGrade" />
 
     <TextView
         android:id="@+id/textViewNoise4"
@@ -163,7 +163,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView8X"
-        app:layout_constraintTop_toBottomOf="@+id/noiseLevel" />
+        app:layout_constraintTop_toBottomOf="@+id/noiseGrade" />
 
     <Button
         android:id="@+id/startUpload"
