@@ -1,6 +1,9 @@
 package com.example.bact.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
@@ -18,7 +21,7 @@ import com.example.bact.util.AlbumUtil
 import com.example.bact.util.DisplayUtil
 import kotlinx.coroutines.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "MainActivityTAG"
@@ -39,7 +42,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textViewNoise4: TextView
 
     private lateinit var originImage: ImageView
+    private lateinit var originImageUri: Uri
     private lateinit var processedImage: ImageView
+    private lateinit var processedImageUri: Uri
 
     private lateinit var openAlbumLauncher: ActivityResultLauncher<String>
 
@@ -51,11 +56,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init() {
-
-        initStatusBar(ContextCompat.getColor(this@MainActivity, R.color.white))
-
-        supportActionBar?.hide()
-
         val padding = DisplayUtil.dp2px(applicationContext, 40f).toInt()
         originImage = binding.originCardView.image.apply {
             setPadding(padding, 0, padding, 0)
@@ -63,14 +63,9 @@ class MainActivity : AppCompatActivity() {
         }
         openAlbumLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-                originImage.apply {
-                    setPadding(0, 0, 0, 0)
-                    setImageURI(uri)
-                }
+                setOriginImageFromAlbum(uri)
                 val bitmap = AlbumUtil.uriToBitmap(this, uri)
-                AlbumUtil.addBitmapToAlbum(
-                    this, bitmap
-                )
+                AlbumUtil.addBitmapToAlbum(this, bitmap)
             }
         binding.originCardView.text.apply {
             text = "原图"
@@ -127,18 +122,25 @@ class MainActivity : AppCompatActivity() {
 
         binding.originCardView.image.setOnClickListener {
             if (viewModel.isHasOriginImage.value == true) {
-                //双指缩放
+                Log.d(TAG,"viewModel.isHasOriginImage.value == true")
+                enterImagePreview(originImageUri)
             } else {
-                //打开相册选择图片
+                Log.d(TAG,"viewModel.isHasOriginImage.value == false")
                 openAlbum()
             }
         }
 
         binding.processedCardView.image.setOnClickListener {
             if (viewModel.isHasProcessedImage.value == true) {
-                //双指缩放
+                enterImagePreview(processedImageUri)
             }
         }
+    }
+
+    private fun enterImagePreview(uri: Uri) {
+        val intent = Intent(this@MainActivity, PreviewImageActivity::class.java)
+        intent.putExtra("key", uri)
+        startActivity(intent)
     }
 
     private fun openAlbum() {
@@ -147,30 +149,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun initOriginImageFromAlbum() {
         AlbumUtil.getShareImageUri(this)?.let {
-            originImage.apply {
-                setPadding(0, 0, 0, 0)
-                setImageURI(it)
-            }
-            viewModel.setIsHasOriginImage(true)
+            setOriginImageFromAlbum(it)
         }
     }
 
-    private fun initStatusBar(@ColorInt color: Int) {
-
-        val window = window.apply {
-            //设置修改状态栏
-            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            //clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
-            //设置状态栏的颜色
-            statusBarColor = color
+    private fun setOriginImageFromAlbum(uri: Uri) {
+        originImageUri = uri
+        viewModel.setIsHasOriginImage(true)
+        originImage.apply {
+            setPadding(0, 0, 0, 0)
+            setImageURI(uri)
         }
-
-        if (DisplayUtil.isLightColor(color)) {
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        } else {
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-        }
-
     }
 
     private fun initTab() {
@@ -225,7 +214,7 @@ class MainActivity : AppCompatActivity() {
             textViewNoise2.isSelected = true
             textViewNoise3.isSelected = false
             textViewNoise4.isSelected = false
-            viewModel.setNoiseGrade(0)
+            viewModel.setNoiseGrade(1)
         }
 
         textViewNoise3.setOnClickListener {
@@ -233,7 +222,7 @@ class MainActivity : AppCompatActivity() {
             textViewNoise2.isSelected = false
             textViewNoise3.isSelected = true
             textViewNoise4.isSelected = false
-            viewModel.setNoiseGrade(1)
+            viewModel.setNoiseGrade(2)
         }
 
         textViewNoise4.setOnClickListener {
@@ -241,7 +230,7 @@ class MainActivity : AppCompatActivity() {
             textViewNoise2.isSelected = false
             textViewNoise3.isSelected = false
             textViewNoise4.isSelected = true
-            viewModel.setNoiseGrade(2)
+            viewModel.setNoiseGrade(3)
         }
 
     }
@@ -259,12 +248,11 @@ class MainActivity : AppCompatActivity() {
         textViewNoise2.isSelected = false
         textViewNoise3.isSelected = false
         textViewNoise4.isSelected = false
-        viewModel.setNoiseGrade(-1)
+        viewModel.setNoiseGrade(0)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
     }
-
 }

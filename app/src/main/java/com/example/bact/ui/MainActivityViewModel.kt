@@ -26,7 +26,7 @@ class MainActivityViewModel : ViewModel() {
         _isHasProcessedImage.value = false
         _isProcessFinish.value = false
         _multiple.value = 2
-        _noiseGrade.value = -1
+        _noiseGrade.value = 0
     }
 
     fun setIsHasOriginImage(isHasOriginImage : Boolean){
