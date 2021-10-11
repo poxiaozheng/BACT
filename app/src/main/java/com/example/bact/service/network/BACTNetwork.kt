@@ -5,12 +5,12 @@ import com.example.bact.service.BACTService
 object BACTNetwork {
 
     private val retrofitService: BACTService by lazy {
-        ServiceCreator.create<BACTService>()
+        ServiceCreator.create()
     }
 
-    suspend fun postOriginImage() = retrofitService.postOriginImage()
+    suspend fun postOriginImage(pictureArray: ByteArray, multiple: Int, noiseGrade: Int) =
+        retrofitService.postOriginImage(pictureArray, multiple, noiseGrade)
 
-    suspend fun getProcessedImage() = retrofitService.getProcessedImage()
-
-    suspend fun queryProgress() = retrofitService.queryProgress()
+    suspend fun queryProgress(imageId: String, receipt: String) =
+        retrofitService.queryProgress(imageId, receipt)
 }

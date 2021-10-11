@@ -1,23 +1,20 @@
 package com.example.bact.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.annotation.ColorInt
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
-import com.example.bact.util.AlbumUtil
+import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
 import kotlinx.coroutines.*
 
@@ -48,6 +45,8 @@ class MainActivity : BaseActivity() {
 
     private lateinit var openAlbumLauncher: ActivityResultLauncher<String>
 
+    private var processedBitmap: Bitmap? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -64,8 +63,8 @@ class MainActivity : BaseActivity() {
         openAlbumLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                 setOriginImageFromAlbum(uri)
-                val bitmap = AlbumUtil.uriToBitmap(this, uri)
-                AlbumUtil.addBitmapToAlbum(this, bitmap)
+                val bitmap = AlbumIOUtil.uriToBitmap(this, uri)
+                AlbumIOUtil.addBitmapToAlbum(this, bitmap)
             }
         binding.originCardView.text.apply {
             text = "原图"
@@ -88,20 +87,22 @@ class MainActivity : BaseActivity() {
     private fun bindingClick() {
         binding.startUpload.setOnClickListener {
             if (viewModel.isProcessFinish.value == true) {
-                Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
                 //保存照片至相册
-//                val bitmap = AlbumUtil.uriToBitmap(this, uri)
-//                AlbumUtil.addBitmapToAlbum(
-//                    this, bitmap,)
+                val bitmap = AlbumIOUtil.uriToBitmap(this, originImageUri)
+                AlbumIOUtil.addBitmapToAlbum(this, bitmap)
+                resetUi()
+                Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
             } else {
                 it.visibility = View.GONE
                 binding.progressBar.visibility = View.VISIBLE
-                //添加上传照片代码,上传完处理完成要改为true
+                //TODO ：上传照片代码,查询处理进度
                 scope.launch {
                     withContext(Dispatchers.IO) {
                         delay(1500)
                     }
                 }
+                //TODO ：处理完返回了，记得调用 viewModel.setIsProcessFinish(true)
+                // viewModel.setIsProcessFinish(true)
                 binding.progressBar.visibility = View.GONE
                 binding.startUpload.apply {
                     text = "保存图片至相册"
@@ -112,29 +113,33 @@ class MainActivity : BaseActivity() {
         }
 
         binding.reset.setOnClickListener {
-            binding.originCardView.image.setImageResource(R.drawable.camera_250)
-            binding.processedCardView.image.setImageResource(R.drawable.processed_place_holder_250)
-            resetMultipleTextView()
-            resetNoiseGradeTextView()
-            binding.reset.visibility = View.GONE
-            binding.startUpload.text = "开始上传"
+            resetUi()
         }
 
-        binding.originCardView.image.setOnClickListener {
+        originImage.setOnClickListener {
             if (viewModel.isHasOriginImage.value == true) {
-                Log.d(TAG,"viewModel.isHasOriginImage.value == true")
+                Log.d(TAG, "viewModel.isHasOriginImage.value == true")
                 enterImagePreview(originImageUri)
             } else {
-                Log.d(TAG,"viewModel.isHasOriginImage.value == false")
+                Log.d(TAG, "viewModel.isHasOriginImage.value == false")
                 openAlbum()
             }
         }
 
-        binding.processedCardView.image.setOnClickListener {
+        processedImage.setOnClickListener {
             if (viewModel.isHasProcessedImage.value == true) {
                 enterImagePreview(processedImageUri)
             }
         }
+    }
+
+    private fun resetUi() {
+        binding.originCardView.image.setImageResource(R.drawable.camera_250)
+        binding.processedCardView.image.setImageResource(R.drawable.processed_place_holder_250)
+        resetMultipleTextView()
+        resetNoiseGradeTextView()
+        binding.reset.visibility = View.GONE
+        binding.startUpload.text = "开始上传"
     }
 
     private fun enterImagePreview(uri: Uri) {
@@ -148,7 +153,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initOriginImageFromAlbum() {
-        AlbumUtil.getShareImageUri(this)?.let {
+        AlbumIOUtil.getShareImageUri(this)?.let {
             setOriginImageFromAlbum(it)
         }
     }

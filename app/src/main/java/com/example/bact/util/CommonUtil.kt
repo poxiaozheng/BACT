@@ -14,19 +14,4 @@ object CommonUtil {
         return context.getSharedPreferences("data", Context.MODE_PRIVATE)
     }
 
-
-    fun uriToByteArr(uri: Uri): ByteArray? {
-       val path = uri.path
-        if(path!=null){
-            val file = File(path)
-            val fi = FileInputStream(file)
-            val length = fi.available()
-            val data = ByteArray(length)
-            fi.read(data, 0, length)
-            fi.close()
-            return data
-        }
-        return null
-    }
-
 }
