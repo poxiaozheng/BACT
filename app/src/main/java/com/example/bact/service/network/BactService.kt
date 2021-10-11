@@ -1,4 +1,4 @@
-package com.example.bact.service
+package com.example.bact.service.network
 
 import com.example.bact.model.response.PostOriginImageResponse
 import com.example.bact.model.response.QueryProgressResponse

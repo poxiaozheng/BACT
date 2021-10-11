@@ -1,7 +1,5 @@
 package com.example.bact.service.network
 
-import com.example.bact.service.BACTService
-
 object BACTNetwork {
 
     private val retrofitService: BACTService by lazy {

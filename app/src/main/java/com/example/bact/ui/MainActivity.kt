@@ -14,8 +14,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
+import com.example.bact.model.response.PostOriginImageResponse
+import com.example.bact.model.response.QueryProgressResponse
+import com.example.bact.service.network.BACTNetwork
 import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
+import com.example.bact.util.ExceptionUtil
 import kotlinx.coroutines.*
 
 class MainActivity : BaseActivity() {
@@ -24,7 +28,9 @@ class MainActivity : BaseActivity() {
         private const val TAG = "MainActivityTAG"
     }
 
-    private lateinit var binding: ActivityMainBinding
+    private var _binding: ActivityMainBinding? = null
+    private val binding
+        get() = _binding!!
     private val viewModel: MainActivityViewModel by viewModels()
     private val scope = MainScope()
 
@@ -42,14 +48,16 @@ class MainActivity : BaseActivity() {
     private lateinit var originImageUri: Uri
     private lateinit var processedImage: ImageView
     private lateinit var processedImageUri: Uri
+    private lateinit var processedImageId: String
+    private lateinit var receipt: String
+    private lateinit var imageUrl: String
+    private var processedBitmap: Bitmap? = null
 
     private lateinit var openAlbumLauncher: ActivityResultLauncher<String>
 
-    private var processedBitmap: Bitmap? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         init()
     }
@@ -86,29 +94,22 @@ class MainActivity : BaseActivity() {
 
     private fun bindingClick() {
         binding.startUpload.setOnClickListener {
-            if (viewModel.isProcessFinish.value == true) {
+            if (viewModel.isProcessedFinish.value!!) {
                 //保存照片至相册
                 val bitmap = AlbumIOUtil.uriToBitmap(this, originImageUri)
                 AlbumIOUtil.addBitmapToAlbum(this, bitmap)
                 resetUi()
                 Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
             } else {
+                viewModel.setIsClickable(false)
                 it.visibility = View.GONE
                 binding.progressBar.visibility = View.VISIBLE
-                //TODO ：上传照片代码,查询处理进度
-                scope.launch {
-                    withContext(Dispatchers.IO) {
-                        delay(1500)
-                    }
-                }
-                //TODO ：处理完返回了，记得调用 viewModel.setIsProcessFinish(true)
-                // viewModel.setIsProcessFinish(true)
-                binding.progressBar.visibility = View.GONE
-                binding.startUpload.apply {
-                    text = "保存图片至相册"
-                    visibility = View.VISIBLE
-                }
-                binding.reset.visibility = View.VISIBLE
+
+                //上传照片代码,查询处理进度
+                //TODO: 之后解注释
+//                scope.launch {
+//                    postImage()
+//                }
             }
         }
 
@@ -117,12 +118,14 @@ class MainActivity : BaseActivity() {
         }
 
         originImage.setOnClickListener {
-            if (viewModel.isHasOriginImage.value == true) {
-                Log.d(TAG, "viewModel.isHasOriginImage.value == true")
-                enterImagePreview(originImageUri)
-            } else {
-                Log.d(TAG, "viewModel.isHasOriginImage.value == false")
-                openAlbum()
+            if (viewModel.isClickable.value!!) {
+                if (viewModel.isHasOriginImage.value == true) {
+                    Log.d(TAG, "viewModel.isHasOriginImage.value == true")
+                    enterImagePreview(originImageUri)
+                } else {
+                    Log.d(TAG, "viewModel.isHasOriginImage.value == false")
+                    openAlbum()
+                }
             }
         }
 
@@ -176,31 +179,39 @@ class MainActivity : BaseActivity() {
         textView16X = binding.textView16X
 
         textView2X.setOnClickListener {
-            resetMultipleTextView()
+            if (viewModel.isClickable.value!!) {
+                resetMultipleTextView()
+            }
         }
 
         textView4X.setOnClickListener {
-            textView2X.isSelected = false
-            textView4X.isSelected = true
-            textView8X.isSelected = false
-            textView16X.isSelected = false
-            viewModel.setMultiple(4)
+            if (viewModel.isClickable.value!!) {
+                textView2X.isSelected = false
+                textView4X.isSelected = true
+                textView8X.isSelected = false
+                textView16X.isSelected = false
+                viewModel.setMultiple(4)
+            }
         }
 
         textView8X.setOnClickListener {
-            textView2X.isSelected = false
-            textView4X.isSelected = false
-            textView8X.isSelected = true
-            textView16X.isSelected = false
-            viewModel.setMultiple(8)
+            if (viewModel.isClickable.value!!) {
+                textView2X.isSelected = false
+                textView4X.isSelected = false
+                textView8X.isSelected = true
+                textView16X.isSelected = false
+                viewModel.setMultiple(8)
+            }
         }
 
         textView16X.setOnClickListener {
-            textView2X.isSelected = false
-            textView4X.isSelected = false
-            textView8X.isSelected = false
-            textView16X.isSelected = true
-            viewModel.setMultiple(16)
+            if (viewModel.isClickable.value!!) {
+                textView2X.isSelected = false
+                textView4X.isSelected = false
+                textView8X.isSelected = false
+                textView16X.isSelected = true
+                viewModel.setMultiple(16)
+            }
         }
 
         textViewNoise1 = binding.textViewNoise1.apply {
@@ -211,31 +222,39 @@ class MainActivity : BaseActivity() {
         textViewNoise4 = binding.textViewNoise4
 
         textViewNoise1.setOnClickListener {
-            resetNoiseGradeTextView()
+            if (viewModel.isClickable.value!!) {
+                resetNoiseGradeTextView()
+            }
         }
 
         textViewNoise2.setOnClickListener {
-            textViewNoise1.isSelected = false
-            textViewNoise2.isSelected = true
-            textViewNoise3.isSelected = false
-            textViewNoise4.isSelected = false
-            viewModel.setNoiseGrade(1)
+            if (viewModel.isClickable.value!!) {
+                textViewNoise1.isSelected = false
+                textViewNoise2.isSelected = true
+                textViewNoise3.isSelected = false
+                textViewNoise4.isSelected = false
+                viewModel.setNoiseGrade(1)
+            }
         }
 
         textViewNoise3.setOnClickListener {
-            textViewNoise1.isSelected = false
-            textViewNoise2.isSelected = false
-            textViewNoise3.isSelected = true
-            textViewNoise4.isSelected = false
-            viewModel.setNoiseGrade(2)
+            if (viewModel.isClickable.value!!) {
+                textViewNoise1.isSelected = false
+                textViewNoise2.isSelected = false
+                textViewNoise3.isSelected = true
+                textViewNoise4.isSelected = false
+                viewModel.setNoiseGrade(2)
+            }
         }
 
         textViewNoise4.setOnClickListener {
-            textViewNoise1.isSelected = false
-            textViewNoise2.isSelected = false
-            textViewNoise3.isSelected = false
-            textViewNoise4.isSelected = true
-            viewModel.setNoiseGrade(3)
+            if (viewModel.isClickable.value!!) {
+                textViewNoise1.isSelected = false
+                textViewNoise2.isSelected = false
+                textViewNoise3.isSelected = false
+                textViewNoise4.isSelected = true
+                viewModel.setNoiseGrade(3)
+            }
         }
 
     }
@@ -259,5 +278,90 @@ class MainActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        _binding = null
     }
+
+    private suspend fun postImage() {
+        withContext(Dispatchers.IO) {
+            val pictureArray = AlbumIOUtil.uriToByteArray(originImageUri)
+            val multiple = viewModel.multiple.value
+            val noiseGrade = viewModel.noiseGrade.value
+            if (pictureArray != null && multiple != null && noiseGrade != null) {
+                val postOriginImageResponse =
+                    ExceptionUtil.dealException({ PostOriginImageResponse(-100, "", "") }) {
+                        BACTNetwork.postOriginImage(pictureArray, multiple, noiseGrade)
+                    }
+                when (postOriginImageResponse.statusCode) {
+                    0 -> {
+                        processedImageId = postOriginImageResponse.imageId
+                        receipt = postOriginImageResponse.receipt
+                        Log.d(TAG, "图片上传成功，imageID：$processedImageId，receipt：$receipt")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
+                        }
+                        while (!viewModel.isProcessedFinish.value!!) {
+                            if (queryProgress()) {
+                                viewModel.setIsProcessedFinish(true)
+                                break
+                            } else {
+                                delay(2000)
+                            }
+                        }
+                    }
+                    -1 -> {
+                        Log.d(TAG, "图片上传失败")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MainActivity, "图片上传失败", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    else -> {
+                        Log.d(TAG, "系统状态异常！")
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun queryProgress(): Boolean {
+        val queryProgressResponse =
+            ExceptionUtil.dealException({ QueryProgressResponse(-100, "") }) {
+                BACTNetwork.queryProgress(processedImageId, receipt)
+            }
+        when (queryProgressResponse.statusCode) {
+            0 -> {
+                imageUrl = queryProgressResponse.imageUrl
+
+                //TODO 将URL变为bitmap展示
+                // viewModel.setIsHasProcessedImage(true)
+                viewModel.setIsProcessedFinish(true)
+                Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
+                //更新UI
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.startUpload.apply {
+                        text = "保存图片至相册"
+                        visibility = View.VISIBLE
+                    }
+                    binding.reset.visibility = View.VISIBLE
+                    viewModel.setIsClickable(true)
+                    Toast.makeText(
+                        this@MainActivity, "图片转换成功，可以保存图片至相册",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                return true
+            }
+            1 -> {
+                Log.d(TAG, "图片转换失败")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "图片转换失败", Toast.LENGTH_SHORT).show()
+                }
+                return false
+            }
+            else -> {
+                return false
+            }
+        }
+    }
+
 }
