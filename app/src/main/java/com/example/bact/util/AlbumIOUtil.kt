@@ -151,18 +151,4 @@ object AlbumIOUtil {
         return bitmap
     }
 
-    fun uriToByteArray(uri: Uri): ByteArray? {
-        val path = uri.path
-        if (path != null) {
-            val file = File(path)
-            val fi = FileInputStream(file)
-            val length = fi.available()
-            val data = ByteArray(length)
-            fi.read(data, 0, length)
-            fi.close()
-            return data
-        }
-        return null
-    }
-
 }

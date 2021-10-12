@@ -30,7 +30,7 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/multipleTextView"
+        android:id="@+id/scaleTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -53,7 +53,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView4X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/multipleTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/scaleTextView" />
 
     <TextView
         android:id="@+id/textView4X"
@@ -67,7 +67,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView8X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView2X"
-        app:layout_constraintTop_toBottomOf="@+id/multipleTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/scaleTextView" />
 
     <TextView
         android:id="@+id/textView8X"
@@ -81,7 +81,7 @@
         app:layout_constraintEnd_toStartOf="@+id/textView16X"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView4X"
-        app:layout_constraintTop_toBottomOf="@+id/multipleTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/scaleTextView" />
 
     <TextView
         android:id="@+id/textView16X"
@@ -95,7 +95,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/textView8X"
-        app:layout_constraintTop_toBottomOf="@+id/multipleTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/scaleTextView" />
 
     <TextView
         android:id="@+id/noiseGrade"

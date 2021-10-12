@@ -33,6 +33,7 @@ class MainActivity : BaseActivity() {
         get() = _binding!!
     private val viewModel: MainActivityViewModel by viewModels()
     private val scope = MainScope()
+    private var isSelectOriginImage = false
 
     private lateinit var textView2X: TextView
     private lateinit var textView4X: TextView
@@ -71,8 +72,9 @@ class MainActivity : BaseActivity() {
         openAlbumLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                 setOriginImageFromAlbum(uri)
-                val bitmap = AlbumIOUtil.uriToBitmap(this, uri)
-                AlbumIOUtil.addBitmapToAlbum(this, bitmap)
+                isSelectOriginImage = true
+                //val bitmap = AlbumIOUtil.uriToBitmap(this, uri)
+                //AlbumIOUtil.addBitmapToAlbum(this, bitmap)
             }
         binding.originCardView.text.apply {
             text = "原图"
@@ -101,15 +103,19 @@ class MainActivity : BaseActivity() {
                 resetUi()
                 Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
             } else {
-                viewModel.setIsClickable(false)
-                it.visibility = View.GONE
-                binding.progressBar.visibility = View.VISIBLE
+                if (!isSelectOriginImage) {
+                    Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
+                } else {
+                    viewModel.setIsClickable(false)
+                    it.visibility = View.GONE
+                    binding.progressBar.visibility = View.VISIBLE
 
-                //上传照片代码,查询处理进度
-                //TODO: 之后解注释
-//                scope.launch {
-//                    postImage()
-//                }
+                    //上传照片代码,查询处理进度
+                    //TODO: 之后解注释
+                    scope.launch {
+                        postImage()
+                    }
+                }
             }
         }
 
@@ -139,7 +145,7 @@ class MainActivity : BaseActivity() {
     private fun resetUi() {
         binding.originCardView.image.setImageResource(R.drawable.camera_250)
         binding.processedCardView.image.setImageResource(R.drawable.processed_place_holder_250)
-        resetMultipleTextView()
+        resetScaleTextView()
         resetNoiseGradeTextView()
         binding.reset.visibility = View.GONE
         binding.startUpload.text = "开始上传"
@@ -180,7 +186,7 @@ class MainActivity : BaseActivity() {
 
         textView2X.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                resetMultipleTextView()
+                resetScaleTextView()
             }
         }
 
@@ -190,7 +196,7 @@ class MainActivity : BaseActivity() {
                 textView4X.isSelected = true
                 textView8X.isSelected = false
                 textView16X.isSelected = false
-                viewModel.setMultiple(4)
+                viewModel.setScale(4)
             }
         }
 
@@ -200,7 +206,7 @@ class MainActivity : BaseActivity() {
                 textView4X.isSelected = false
                 textView8X.isSelected = true
                 textView16X.isSelected = false
-                viewModel.setMultiple(8)
+                viewModel.setScale(8)
             }
         }
 
@@ -210,7 +216,7 @@ class MainActivity : BaseActivity() {
                 textView4X.isSelected = false
                 textView8X.isSelected = false
                 textView16X.isSelected = true
-                viewModel.setMultiple(16)
+                viewModel.setScale(16)
             }
         }
 
@@ -259,12 +265,12 @@ class MainActivity : BaseActivity() {
 
     }
 
-    private fun resetMultipleTextView() {
+    private fun resetScaleTextView() {
         textView2X.isSelected = true
         textView4X.isSelected = false
         textView8X.isSelected = false
         textView16X.isSelected = false
-        viewModel.setMultiple(2)
+        viewModel.setScale(2)
     }
 
     private fun resetNoiseGradeTextView() {
@@ -283,13 +289,18 @@ class MainActivity : BaseActivity() {
 
     private suspend fun postImage() {
         withContext(Dispatchers.IO) {
-            val pictureArray = AlbumIOUtil.uriToByteArray(originImageUri)
-            val multiple = viewModel.multiple.value
+            val pictureArray = AlbumIOUtil.bitmapToByteArray(
+                AlbumIOUtil.uriToBitmap(
+                    this@MainActivity,
+                    originImageUri
+                )
+            )
+            val scale = viewModel.scale.value
             val noiseGrade = viewModel.noiseGrade.value
-            if (pictureArray != null && multiple != null && noiseGrade != null) {
+            if (pictureArray != null && scale != null && noiseGrade != null) {
                 val postOriginImageResponse =
                     ExceptionUtil.dealException({ PostOriginImageResponse(-100, "", "") }) {
-                        BACTNetwork.postOriginImage(pictureArray, multiple, noiseGrade)
+                        BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
                     }
                 when (postOriginImageResponse.statusCode) {
                     0 -> {

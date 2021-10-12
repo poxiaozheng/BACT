@@ -12,7 +12,7 @@ interface BACTService {
     @POST("/postOriginImage")
     suspend fun postOriginImage(
         @Body pictureArray: ByteArray,
-        @Query("multiple") multiple: Int,
+        @Query("scale") scale: Int,
         @Query("noiseGrade") noiseGrade: Int
     ): PostOriginImageResponse
 

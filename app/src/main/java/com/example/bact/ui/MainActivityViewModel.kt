@@ -12,8 +12,8 @@ class MainActivityViewModel : ViewModel() {
     private val _isHasProcessedImage = MutableLiveData<Boolean>()
     val isHasProcessedImage: LiveData<Boolean> = _isHasProcessedImage
 
-    private val _multiple = MutableLiveData<Int>()
-    val multiple: LiveData<Int> = _multiple
+    private val _scale = MutableLiveData<Int>()
+    val scale: LiveData<Int> = _scale
 
     private val _noiseGrade = MutableLiveData<Int>()
     val noiseGrade: LiveData<Int> = _noiseGrade
@@ -29,7 +29,7 @@ class MainActivityViewModel : ViewModel() {
     init {
         _isHasOriginImage.value = false
         _isHasProcessedImage.value = false
-        _multiple.value = 2
+        _scale.value = 2
         _noiseGrade.value = 0
         _isProcessedFinish.value = false
         _isClickable.value = true
@@ -51,8 +51,8 @@ class MainActivityViewModel : ViewModel() {
         _isHasProcessedImage.value = isHasProcessedImage
     }
 
-    fun setMultiple(multiple: Int) {
-        _multiple.value = multiple
+    fun setScale(scale: Int) {
+        _scale.value = scale
     }
 
     fun setNoiseGrade(noiseGrade: Int) {
