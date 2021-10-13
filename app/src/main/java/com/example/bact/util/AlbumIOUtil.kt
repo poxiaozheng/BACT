@@ -12,6 +12,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import java.io.*
+import java.net.URL
 
 object AlbumIOUtil {
 
@@ -71,7 +72,7 @@ object AlbumIOUtil {
         bitmap: Bitmap,
         mimeType: String = "image/jpeg",
         compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
-    ) {
+    ) :Uri ?{
         val values = getContentValues(mimeType)
         val uri =
             context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
@@ -82,6 +83,7 @@ object AlbumIOUtil {
                 outputStream.close()
             }
         }
+        return uri
     }
 
     fun bitmapToByteArray(
@@ -148,6 +150,24 @@ object AlbumIOUtil {
         val fd = context.contentResolver.openFileDescriptor(uri, "r")
         val bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor)
         fd?.close()
+        return bitmap
+    }
+
+    fun getURLImage(url: String): Bitmap? {
+        var bitmap: Bitmap? = null
+        ExceptionUtil.wrapException {
+            val imageUrl = URL(url)
+            val httpURLConnection = imageUrl.openConnection()
+            httpURLConnection.apply {
+                connectTimeout = 5000
+                doInput = false
+                useCaches = false
+                connect()
+                val inputStream = httpURLConnection.getInputStream()
+                bitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream.close()
+            }
+        }
         return bitmap
     }
 

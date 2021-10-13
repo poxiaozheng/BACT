@@ -1,6 +1,7 @@
 package com.example.bact.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -95,29 +96,24 @@ class MainActivity : BaseActivity() {
         initTab()
 
         bindingClick()
+
+        viewModel.processedBitmap.observe(this){
+            processedImage.setImageBitmap(it)
+        }
     }
 
     private fun bindingClick() {
         binding.startUpload.setOnClickListener {
-            if (viewModel.isProcessedFinish.value!!) {
-                //保存照片至相册
-                val bitmap = AlbumIOUtil.uriToBitmap(this, viewModel.getProcessedImageUri()!!)
-                AlbumIOUtil.addBitmapToAlbum(this, bitmap)
-                resetUi()
-                Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "开始上传图片！")
+            if (!viewModel.isHasOriginImage.value!!) {
+                Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
             } else {
-                if (!viewModel.isHasOriginImage.value!!) {
-                    Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
-                } else {
-                    viewModel.setIsClickable(false)
-                    it.visibility = View.GONE
-                    binding.progressBar.visibility = View.VISIBLE
-                    binding.reset.visibility = View.GONE
-                    //上传照片代码,查询处理进度
-                    //TODO: 之后解注释
-                    scope.launch {
-                        postImage()
-                    }
+                viewModel.setIsClickable(false)
+                it.visibility = View.GONE
+                binding.progressBar.visibility = View.VISIBLE
+                binding.reset.visibility = View.GONE
+                scope.launch {
+                    postImage()
                 }
             }
         }
@@ -296,6 +292,9 @@ class MainActivity : BaseActivity() {
             val scale = viewModel.scale.value
             val noiseGrade = viewModel.noiseGrade.value
             if (pictureArray != null && scale != null && noiseGrade != null) {
+                Log.d(TAG, "pictureArray:$pictureArray")
+                Log.d(TAG, "scale:$scale")
+                Log.d(TAG, "noiseGrade:$noiseGrade")
                 val postOriginImageResponse =
                     ExceptionUtil.dealException({ PostOriginImageResponse(-100, "", "") }) {
                         BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
@@ -310,12 +309,11 @@ class MainActivity : BaseActivity() {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
                         }
-                        while (!viewModel.isProcessedFinish.value!!) {
+                        while (!viewModel.isHasProcessedImage.value!!) {
                             if (queryProgress()) {
-                                viewModel.setIsProcessedFinish(true)
                                 break
                             } else {
-                                delay(2000)
+                                delay(10000)
                             }
                         }
                     }
@@ -342,30 +340,35 @@ class MainActivity : BaseActivity() {
             0 -> {
                 val imageUrl = queryProgressResponse.imageUrl
                 viewModel.setImageUrl(imageUrl)
-                //TODO 将URL变为bitmap展示
-                // viewModel.setIsHasProcessedImage(true)
-                viewModel.setIsProcessedFinish(true)
+                val processedImageBitmap = AlbumIOUtil.getURLImage(imageUrl)?.let {
+                    viewModel.setProcessedBitmap(it)
+                    viewModel.setIsHasProcessedImage(true)
+                    val uri = AlbumIOUtil.addBitmapToAlbum(
+                        this,
+                        it,
+                        "image/png",
+                        Bitmap.CompressFormat.PNG
+                    )
+                    viewModel.setProcessedImageUri(uri)
+                }
                 Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
                 //更新UI
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    binding.startUpload.apply {
-                        text = "保存图片至相册"
-                        visibility = View.VISIBLE
-                    }
+                    binding.startUpload.visibility = View.VISIBLE
                     binding.reset.visibility = View.VISIBLE
                     viewModel.setIsClickable(true)
                     Toast.makeText(
-                        this@MainActivity, "图片转换成功，可以保存图片至相册",
+                        this@MainActivity, "图片转换成功，已保存至系统相册！",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
                 return true
             }
-            1 -> {
-                Log.d(TAG, "图片转换失败")
+            -1 -> {
+                Log.d(TAG, "图片转换还未完成")
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "图片转换失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "图片转换还未完成", Toast.LENGTH_SHORT).show()
                 }
                 return false
             }
