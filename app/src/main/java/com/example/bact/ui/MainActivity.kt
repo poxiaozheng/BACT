@@ -1,7 +1,6 @@
 package com.example.bact.ui
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -12,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
 import com.example.bact.model.response.PostOriginImageResponse
@@ -21,6 +21,7 @@ import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
 import com.example.bact.util.ExceptionUtil
 import kotlinx.coroutines.*
+import kotlin.properties.Delegates
 
 class MainActivity : BaseActivity() {
 
@@ -33,7 +34,7 @@ class MainActivity : BaseActivity() {
         get() = _binding!!
     private val viewModel: MainActivityViewModel by viewModels()
     private val scope = MainScope()
-    private var isSelectOriginImage = false
+    private var padding by Delegates.notNull<Int>()
 
     private lateinit var textView2X: TextView
     private lateinit var textView4X: TextView
@@ -46,13 +47,7 @@ class MainActivity : BaseActivity() {
     private lateinit var textViewNoise4: TextView
 
     private lateinit var originImage: ImageView
-    private lateinit var originImageUri: Uri
     private lateinit var processedImage: ImageView
-    private lateinit var processedImageUri: Uri
-    private lateinit var processedImageId: String
-    private lateinit var receipt: String
-    private lateinit var imageUrl: String
-    private var processedBitmap: Bitmap? = null
 
     private lateinit var openAlbumLauncher: ActivityResultLauncher<String>
 
@@ -60,28 +55,36 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        initStatusBar(ContextCompat.getColor(this, R.color.white))
+        padding = DisplayUtil.dp2px(applicationContext, 40f).toInt()
         init()
     }
 
     private fun init() {
-        val padding = DisplayUtil.dp2px(applicationContext, 40f).toInt()
         originImage = binding.originCardView.image.apply {
-            setPadding(padding, 0, padding, 0)
-            setImageResource(R.drawable.camera_250)
+            if (viewModel.getOriginImageUri() != null) {
+                setPadding(0, 0, 0, 0)
+                setImageURI(viewModel.getOriginImageUri())
+            } else {
+                setPadding(padding, 0, padding, 0)
+                setImageResource(R.drawable.camera_250)
+            }
         }
         openAlbumLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                 setOriginImageFromAlbum(uri)
-                isSelectOriginImage = true
-                //val bitmap = AlbumIOUtil.uriToBitmap(this, uri)
-                //AlbumIOUtil.addBitmapToAlbum(this, bitmap)
             }
         binding.originCardView.text.apply {
             text = "原图"
         }
         processedImage = binding.processedCardView.image.apply {
-            setPadding(padding, 0, padding, 0)
-            setImageResource(R.drawable.processed_place_holder_250)
+            if (viewModel.getProcessedImageUri() != null) {
+                setPadding(0, 0, 0, 0)
+                setImageURI(viewModel.getProcessedImageUri())
+            } else {
+                setPadding(padding, 0, padding, 0)
+                setImageResource(R.drawable.processed_place_holder_250)
+            }
         }
         binding.processedCardView.text.apply {
             text = "处理结果图"
@@ -98,18 +101,18 @@ class MainActivity : BaseActivity() {
         binding.startUpload.setOnClickListener {
             if (viewModel.isProcessedFinish.value!!) {
                 //保存照片至相册
-                val bitmap = AlbumIOUtil.uriToBitmap(this, originImageUri)
+                val bitmap = AlbumIOUtil.uriToBitmap(this, viewModel.getProcessedImageUri()!!)
                 AlbumIOUtil.addBitmapToAlbum(this, bitmap)
                 resetUi()
                 Toast.makeText(this, "照片已保存至系统相册", Toast.LENGTH_SHORT).show()
             } else {
-                if (!isSelectOriginImage) {
+                if (!viewModel.isHasOriginImage.value!!) {
                     Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
                 } else {
                     viewModel.setIsClickable(false)
                     it.visibility = View.GONE
                     binding.progressBar.visibility = View.VISIBLE
-
+                    binding.reset.visibility = View.GONE
                     //上传照片代码,查询处理进度
                     //TODO: 之后解注释
                     scope.launch {
@@ -127,7 +130,7 @@ class MainActivity : BaseActivity() {
             if (viewModel.isClickable.value!!) {
                 if (viewModel.isHasOriginImage.value == true) {
                     Log.d(TAG, "viewModel.isHasOriginImage.value == true")
-                    enterImagePreview(originImageUri)
+                    enterImagePreview(viewModel.getOriginImageUri()!!)
                 } else {
                     Log.d(TAG, "viewModel.isHasOriginImage.value == false")
                     openAlbum()
@@ -137,17 +140,26 @@ class MainActivity : BaseActivity() {
 
         processedImage.setOnClickListener {
             if (viewModel.isHasProcessedImage.value == true) {
-                enterImagePreview(processedImageUri)
+                enterImagePreview(viewModel.getProcessedImageUri()!!)
             }
         }
     }
 
     private fun resetUi() {
-        binding.originCardView.image.setImageResource(R.drawable.camera_250)
-        binding.processedCardView.image.setImageResource(R.drawable.processed_place_holder_250)
+        originImage.apply {
+            setPadding(padding, 0, padding, 0)
+            setImageResource(R.drawable.camera_250)
+        }
+        processedImage.apply {
+            setPadding(padding, 0, padding, 0)
+            setImageResource(R.drawable.processed_place_holder_250)
+        }
+        viewModel.setIsHasOriginImage(false)
+        viewModel.setIsHasProcessedImage(false)
+        viewModel.setOriginImageUri(null)
+        viewModel.setProcessedImageUri(null)
         resetScaleTextView()
         resetNoiseGradeTextView()
-        binding.reset.visibility = View.GONE
         binding.startUpload.text = "开始上传"
     }
 
@@ -168,7 +180,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun setOriginImageFromAlbum(uri: Uri) {
-        originImageUri = uri
+        viewModel.setOriginImageUri(uri)
         viewModel.setIsHasOriginImage(true)
         originImage.apply {
             setPadding(0, 0, 0, 0)
@@ -177,12 +189,17 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initTab() {
-        textView2X = binding.textView2X.apply {
-            isSelected = true
-        }
+        textView2X = binding.textView2X
         textView4X = binding.textView4X
         textView8X = binding.textView8X
         textView16X = binding.textView16X
+
+        when (viewModel.scale.value) {
+            2 -> selectTextView2X()
+            4 -> selectTextView4X()
+            8 -> selectTextView8X()
+            16 -> selectTextView16X()
+        }
 
         textView2X.setOnClickListener {
             if (viewModel.isClickable.value!!) {
@@ -192,40 +209,36 @@ class MainActivity : BaseActivity() {
 
         textView4X.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textView2X.isSelected = false
-                textView4X.isSelected = true
-                textView8X.isSelected = false
-                textView16X.isSelected = false
+                selectTextView4X()
                 viewModel.setScale(4)
             }
         }
 
         textView8X.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textView2X.isSelected = false
-                textView4X.isSelected = false
-                textView8X.isSelected = true
-                textView16X.isSelected = false
+                selectTextView8X()
                 viewModel.setScale(8)
             }
         }
 
         textView16X.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textView2X.isSelected = false
-                textView4X.isSelected = false
-                textView8X.isSelected = false
-                textView16X.isSelected = true
+                selectTextView16X()
                 viewModel.setScale(16)
             }
         }
 
-        textViewNoise1 = binding.textViewNoise1.apply {
-            isSelected = true
-        }
+        textViewNoise1 = binding.textViewNoise1
         textViewNoise2 = binding.textViewNoise2
         textViewNoise3 = binding.textViewNoise3
         textViewNoise4 = binding.textViewNoise4
+
+        when (viewModel.noiseGrade.value) {
+            0 -> selectTextViewNoise1()
+            1 -> selectTextViewNoise2()
+            2 -> selectTextViewNoise3()
+            3 -> selectTextViewNoise4()
+        }
 
         textViewNoise1.setOnClickListener {
             if (viewModel.isClickable.value!!) {
@@ -235,30 +248,21 @@ class MainActivity : BaseActivity() {
 
         textViewNoise2.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textViewNoise1.isSelected = false
-                textViewNoise2.isSelected = true
-                textViewNoise3.isSelected = false
-                textViewNoise4.isSelected = false
+                selectTextViewNoise2()
                 viewModel.setNoiseGrade(1)
             }
         }
 
         textViewNoise3.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textViewNoise1.isSelected = false
-                textViewNoise2.isSelected = false
-                textViewNoise3.isSelected = true
-                textViewNoise4.isSelected = false
+                selectTextViewNoise3()
                 viewModel.setNoiseGrade(2)
             }
         }
 
         textViewNoise4.setOnClickListener {
             if (viewModel.isClickable.value!!) {
-                textViewNoise1.isSelected = false
-                textViewNoise2.isSelected = false
-                textViewNoise3.isSelected = false
-                textViewNoise4.isSelected = true
+                selectTextViewNoise4()
                 viewModel.setNoiseGrade(3)
             }
         }
@@ -266,18 +270,12 @@ class MainActivity : BaseActivity() {
     }
 
     private fun resetScaleTextView() {
-        textView2X.isSelected = true
-        textView4X.isSelected = false
-        textView8X.isSelected = false
-        textView16X.isSelected = false
+        selectTextView2X()
         viewModel.setScale(2)
     }
 
     private fun resetNoiseGradeTextView() {
-        textViewNoise1.isSelected = true
-        textViewNoise2.isSelected = false
-        textViewNoise3.isSelected = false
-        textViewNoise4.isSelected = false
+        selectTextViewNoise1()
         viewModel.setNoiseGrade(0)
     }
 
@@ -292,7 +290,7 @@ class MainActivity : BaseActivity() {
             val pictureArray = AlbumIOUtil.bitmapToByteArray(
                 AlbumIOUtil.uriToBitmap(
                     this@MainActivity,
-                    originImageUri
+                    viewModel.getOriginImageUri()!!
                 )
             )
             val scale = viewModel.scale.value
@@ -304,8 +302,10 @@ class MainActivity : BaseActivity() {
                     }
                 when (postOriginImageResponse.statusCode) {
                     0 -> {
-                        processedImageId = postOriginImageResponse.imageId
-                        receipt = postOriginImageResponse.receipt
+                        val processedImageId = postOriginImageResponse.imageId
+                        viewModel.setProcessedImageId(processedImageId)
+                        val receipt = postOriginImageResponse.receipt
+                        viewModel.setReceipt(receipt)
                         Log.d(TAG, "图片上传成功，imageID：$processedImageId，receipt：$receipt")
                         withContext(Dispatchers.Main) {
                             Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
@@ -336,12 +336,12 @@ class MainActivity : BaseActivity() {
     private suspend fun queryProgress(): Boolean {
         val queryProgressResponse =
             ExceptionUtil.dealException({ QueryProgressResponse(-100, "") }) {
-                BACTNetwork.queryProgress(processedImageId, receipt)
+                BACTNetwork.queryProgress(viewModel.getProcessedImageId(), viewModel.getReceipt())
             }
         when (queryProgressResponse.statusCode) {
             0 -> {
-                imageUrl = queryProgressResponse.imageUrl
-
+                val imageUrl = queryProgressResponse.imageUrl
+                viewModel.setImageUrl(imageUrl)
                 //TODO 将URL变为bitmap展示
                 // viewModel.setIsHasProcessedImage(true)
                 viewModel.setIsProcessedFinish(true)
@@ -373,6 +373,62 @@ class MainActivity : BaseActivity() {
                 return false
             }
         }
+    }
+
+    private fun selectTextView2X() {
+        textView2X.isSelected = true
+        textView4X.isSelected = false
+        textView8X.isSelected = false
+        textView16X.isSelected = false
+    }
+
+    private fun selectTextView4X() {
+        textView2X.isSelected = false
+        textView4X.isSelected = true
+        textView8X.isSelected = false
+        textView16X.isSelected = false
+    }
+
+    private fun selectTextView8X() {
+        textView2X.isSelected = false
+        textView4X.isSelected = false
+        textView8X.isSelected = true
+        textView16X.isSelected = false
+    }
+
+    private fun selectTextView16X() {
+        textView2X.isSelected = false
+        textView4X.isSelected = false
+        textView8X.isSelected = false
+        textView16X.isSelected = true
+    }
+
+    private fun selectTextViewNoise1() {
+        textViewNoise1.isSelected = true
+        textViewNoise2.isSelected = false
+        textViewNoise3.isSelected = false
+        textViewNoise4.isSelected = false
+    }
+
+    private fun selectTextViewNoise2() {
+        textViewNoise1.isSelected = false
+        textViewNoise2.isSelected = true
+        textViewNoise3.isSelected = false
+        textViewNoise4.isSelected = false
+    }
+
+    private fun selectTextViewNoise3() {
+        textViewNoise1.isSelected = false
+        textViewNoise2.isSelected = false
+        textViewNoise3.isSelected = true
+        textViewNoise4.isSelected = false
+    }
+
+    private fun selectTextViewNoise4() {
+        textViewNoise1.isSelected = false
+        textViewNoise2.isSelected = false
+        textViewNoise3.isSelected = false
+        textViewNoise4.isSelected = true
     }
 
 }

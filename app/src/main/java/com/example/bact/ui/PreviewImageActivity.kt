@@ -1,5 +1,6 @@
 package com.example.bact.ui
 
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -21,6 +22,7 @@ class PreviewImageActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initStatusBar(Color.BLACK)
         binding = ActivityPreviewSelectedImageBinding.inflate(layoutInflater)
         setContentView(binding.root)
         init()

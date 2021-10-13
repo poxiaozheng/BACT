@@ -35,28 +35,16 @@
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/homeArrowBtn"
                 style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="47dp"
+                android:layout_width="36dp"
                 android:layout_height="0dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_keyboard_arrow_left_black_36dp"
+                android:src="@drawable/ic_keyboard_arrow_left_white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="8dp"
-                android:layout_marginBottom="8dp"
-                android:text="预览图片"
-                android:textColor="#fff"
-                android:textSize="18sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

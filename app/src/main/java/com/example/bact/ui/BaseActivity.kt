@@ -14,10 +14,9 @@ open class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        initStatusBar(ContextCompat.getColor(this@BaseActivity, R.color.white))
     }
 
-    private fun initStatusBar(@ColorInt color: Int) {
+    protected fun initStatusBar(@ColorInt color: Int) {
 
         val window = window.apply {
             //设置修改状态栏
