@@ -9,7 +9,7 @@ import retrofit2.http.Query
 
 interface BACTService {
 
-    @POST("/postOriginImage")
+    @POST("/bact/postOriginImage")
     suspend fun postOriginImage(
         @Body pictureArray: ByteArray,
         @Query("scale") scale: Int,
@@ -17,7 +17,7 @@ interface BACTService {
     ): PostOriginImageResponse
 
 
-    @GET("/queryProgress")
+    @GET("/bact/queryProgress")
     suspend fun queryProgress(
         @Query("imageId") imageId: String,
         @Query("receipt") receipt: String

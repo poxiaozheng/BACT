@@ -22,6 +22,7 @@ import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
 import com.example.bact.util.ExceptionUtil
 import kotlinx.coroutines.*
+import java.util.*
 import kotlin.properties.Delegates
 
 class MainActivity : BaseActivity() {
@@ -291,8 +292,8 @@ class MainActivity : BaseActivity() {
             )
             val scale = viewModel.scale.value
             val noiseGrade = viewModel.noiseGrade.value
-            if (pictureArray != null && scale != null && noiseGrade != null) {
-                Log.d(TAG, "pictureArray:$pictureArray")
+            if (scale != null && noiseGrade != null) {
+                Log.d(TAG, "pictureArray:${ Arrays.toString(pictureArray)}")
                 Log.d(TAG, "scale:$scale")
                 Log.d(TAG, "noiseGrade:$noiseGrade")
                 val postOriginImageResponse =
