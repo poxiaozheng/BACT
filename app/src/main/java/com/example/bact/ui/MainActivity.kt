@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
 import com.example.bact.model.response.PostOriginImageResponse
+import com.example.bact.model.response.PostOriginImageResponse2
 import com.example.bact.model.response.QueryProgressResponse
 import com.example.bact.service.network.BACTNetwork
 import com.example.bact.util.AlbumIOUtil
@@ -99,7 +100,7 @@ class MainActivity : BaseActivity() {
 
         bindingClick()
 
-        viewModel.processedBitmap.observe(this){
+        viewModel.processedBitmap.observe(this) {
             processedImage.setImageBitmap(it)
         }
     }
@@ -115,7 +116,7 @@ class MainActivity : BaseActivity() {
                 binding.progressBar.visibility = View.VISIBLE
                 binding.reset.visibility = View.GONE
                 scope.launch {
-                   // postImage()
+                    postImage()
                 }
             }
         }
@@ -297,32 +298,42 @@ class MainActivity : BaseActivity() {
                 //Log.d(TAG, "pictureArray:${pictureArray.contentToString()}")
                 Log.d(TAG, "scale:$scale")
                 Log.d(TAG, "noiseGrade:$noiseGrade")
-                val postOriginImageResponse =
-                    ExceptionUtil.dealException({ PostOriginImageResponse(-100, "", "") }) {
+                val postOriginImageResponse2 =
+                    ExceptionUtil.dealException({ PostOriginImageResponse2(-100, "") }) {
                         BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
                     }
-                when (postOriginImageResponse.statusCode) {
+                when (postOriginImageResponse2.statusCode) {
                     0 -> {
-                        val processedImageId = postOriginImageResponse.imageId
-                        viewModel.setProcessedImageId(processedImageId)
-                        val receipt = postOriginImageResponse.receipt
-                        viewModel.setReceipt(receipt)
-                        Log.d(TAG, "图片上传成功，imageID：$processedImageId，receipt：$receipt")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
+                        val imageUrl = postOriginImageResponse2.imageUrl
+                        viewModel.setImageUrl(imageUrl)
+                        AlbumIOUtil.getURLImage(imageUrl)?.let {
+                            viewModel.setProcessedBitmap(it)
+                            viewModel.setIsHasProcessedImage(true)
+                            val uri = AlbumIOUtil.addBitmapToAlbum(
+                                this@MainActivity,
+                                it,
+                                "image/png",
+                                Bitmap.CompressFormat.PNG
+                            )
+                            viewModel.setProcessedImageUri(uri)
                         }
-                        while (!viewModel.isHasProcessedImage.value!!) {
-                            if (queryProgress()) {
-                                break
-                            } else {
-                                delay(10000)
-                            }
+                        Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
+                        //更新UI
+                        withContext(Dispatchers.Main) {
+                            binding.progressBar.visibility = View.GONE
+                            binding.startUpload.visibility = View.VISIBLE
+                            binding.reset.visibility = View.VISIBLE
+                            viewModel.setIsClickable(true)
+                            Toast.makeText(
+                                this@MainActivity, "图片转换成功，已保存至系统相册！",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                     -1 -> {
-                        Log.d(TAG, "图片上传失败")
+                        Log.d(TAG, "图片转换失败")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(this@MainActivity, "图片上传失败", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "图片转换失败", Toast.LENGTH_SHORT).show()
                         }
                     }
                     else -> {
