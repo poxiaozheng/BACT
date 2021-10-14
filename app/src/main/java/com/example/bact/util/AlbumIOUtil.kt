@@ -18,7 +18,7 @@ object AlbumIOUtil {
 
     private const val TAG = "AlbumUtil"
 
-    private fun getRealPathFromURI(activity: Activity, uri: Uri?): String? {
+     fun getRealPathFromURI(activity: Activity, uri: Uri?): String? {
         val arr = arrayOf(MediaStore.Images.Media.DATA)
         val cursor = activity.managedQuery(uri, arr, null, null, null)
             ?: return uri?.path
@@ -36,9 +36,9 @@ object AlbumIOUtil {
                 if (it.containsKey(Intent.EXTRA_STREAM)) {
                     try {
                         val uri = it.getParcelable(Intent.EXTRA_STREAM) as Uri?
-                        Log.d(TAG, "uri:$uri")
-                        //val path = getRealPathFromURI(activity, uri)
-                        //Log.d(TAG, "path:$path")
+                        uri?.path?.let { it1 -> Log.d(TAG, "getPath():$it1") }
+                        val path = getRealPathFromURI(activity, uri)
+                        Log.d(TAG, "path:$path")
                         return uri
                     } catch (e: Exception) {
                         Log.d(TAG, e.toString())
@@ -170,5 +170,6 @@ object AlbumIOUtil {
         }
         return bitmap
     }
+
 
 }

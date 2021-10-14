@@ -2,10 +2,8 @@ package com.example.bact.service.network
 
 import com.example.bact.model.response.PostOriginImageResponse
 import com.example.bact.model.response.QueryProgressResponse
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Query
+import okhttp3.MultipartBody
+import retrofit2.http.*
 
 interface BACTService {
 
@@ -15,6 +13,14 @@ interface BACTService {
         @Query("scale") scale: Int,
         @Query("noiseGrade") noiseGrade: Int
     ): PostOriginImageResponse
+
+//    @Multipart
+//    @POST("/bact/postOriginImage")
+//    suspend fun postOriginImage(
+//        @Part pictureArray: MultipartBody.Part,
+//        @Query("scale") scale: Int,
+//        @Query("noiseGrade") noiseGrade: Int
+//    ): PostOriginImageResponse
 
 
     @GET("/bact/queryProgress")

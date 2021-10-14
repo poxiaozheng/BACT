@@ -1,5 +1,8 @@
 package com.example.bact.service.network
 
+import okhttp3.MultipartBody
+import java.io.File
+
 object BACTNetwork {
 
     private val retrofitService: BACTService by lazy {
