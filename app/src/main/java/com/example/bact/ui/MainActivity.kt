@@ -35,6 +35,7 @@ class MainActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "MainActivityTAG"
+        private const val URL_PRE = "http://192.168.88.194:8081/bact/output/"
     }
 
     private var _binding: ActivityMainBinding? = null
@@ -331,7 +332,7 @@ class MainActivity : BaseActivity() {
                             if (queryProgress()) {
                                 break
                             } else {
-                                delay(15000)
+                                delay(5000)
                             }
                         }
                     }
@@ -356,7 +357,7 @@ class MainActivity : BaseActivity() {
             }
         when (queryProgressResponse.statusCode) {
             0 -> {
-                val imageUrl = queryProgressResponse.imageUrl
+                val imageUrl = URL_PRE + queryProgressResponse.imageUrl
                 viewModel.setImageUrl(imageUrl)
 
                 val imageRequest = Request.Builder().url(imageUrl).get().build()
@@ -365,12 +366,19 @@ class MainActivity : BaseActivity() {
 
                 val imageContent = response?.body()?.bytes()
                 if (imageContent != null) {
+
+                    val opts = BitmapFactory.Options()
+                    opts.inPreferredConfig = Bitmap.Config.ARGB_8888
+
                     val imageBitMap =
-                        BitmapFactory.decodeByteArray(imageContent, 0, imageContent.size, null)
+                        BitmapFactory.decodeByteArray(imageContent, 0, imageContent.size, opts)
 
                     withContext(Dispatchers.Main) {
                         viewModel.setProcessedBitmap(imageBitMap)
-                        processedImage.setImageBitmap(imageBitMap)
+                        processedImage.apply {
+                            setPadding(0, 0, 0, 0)
+                            setImageBitmap(imageBitMap)
+                        }
                         viewModel.setIsHasProcessedImage(true)
                         val uri = AlbumIOUtil.addBitmapToAlbum(
                             this@MainActivity,
@@ -399,9 +407,6 @@ class MainActivity : BaseActivity() {
             }
             -1 -> {
                 Log.d(TAG, "图片转换还未完成")
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "图片转换还未完成", Toast.LENGTH_SHORT).show()
-                }
                 return false
             }
             else -> {
