@@ -16,14 +16,14 @@ import androidx.core.content.ContextCompat
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
 import com.example.bact.model.response.PostOriginImageResponse
-import com.example.bact.model.response.PostOriginImageResponse2
-import com.example.bact.model.response.QueryProgressResponse
-import com.example.bact.service.network.BACTNetwork
 import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
-import com.example.bact.util.ExceptionUtil
+import com.google.gson.Gson
 import kotlinx.coroutines.*
-import java.io.File
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
 import java.util.*
 import kotlin.properties.Delegates
 
@@ -295,19 +295,32 @@ class MainActivity : BaseActivity() {
             val scale = viewModel.scale.value
             val noiseGrade = viewModel.noiseGrade.value
             if (scale != null && noiseGrade != null) {
-                //Log.d(TAG, "pictureArray:${pictureArray.contentToString()}")
                 Log.d(TAG, "scale:$scale")
                 Log.d(TAG, "noiseGrade:$noiseGrade")
-                val postOriginImageResponse2 =
-                    ExceptionUtil.dealException({ PostOriginImageResponse2(-100, "") }) {
-                        BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
-                    }
-                when (postOriginImageResponse2.statusCode) {
+                val okHttpClient = OkHttpClient().newBuilder().build()
+                val mediaType = MediaType.parse("image/png")
+                val requestBody = RequestBody.create(mediaType,pictureArray)
+                val request = Request.Builder().url("http://192.168.88.194:8081/bact/postOriginImage?scale=$scale&noiseGrade=$noiseGrade")
+                    .method("POST",requestBody)
+                    .addHeader("Content-Type","image/png")
+                    .build()
+                val response = okHttpClient.newCall(request).execute()
+                Log.d(TAG,"response:$response")
+                val responseData = response.body()?.string()
+                val gson = Gson()
+                val postOriginImageResponse = gson.fromJson(responseData,PostOriginImageResponse::class.java)
+//                val requestBody : RequestBody = RequestBody.create(ServiceCreator.mediaType,pictureArray)
+//                val postOriginImageResponse2 =
+//                    ExceptionUtil.dealException({ PostOriginImageResponse2(-100, "") }) {
+//                        BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
+//                    }
+                when (postOriginImageResponse.statusCode) {
                     0 -> {
-                        val imageUrl = postOriginImageResponse2.imageUrl
+                        val imageUrl = postOriginImageResponse.imageUrl
                         viewModel.setImageUrl(imageUrl)
                         AlbumIOUtil.getURLImage(imageUrl)?.let {
                             viewModel.setProcessedBitmap(it)
+                            processedImage.setImageBitmap(it)
                             viewModel.setIsHasProcessedImage(true)
                             val uri = AlbumIOUtil.addBitmapToAlbum(
                                 this@MainActivity,
@@ -340,53 +353,6 @@ class MainActivity : BaseActivity() {
                         Log.d(TAG, "系统状态异常！")
                     }
                 }
-            }
-        }
-    }
-
-    private suspend fun queryProgress(): Boolean {
-        val queryProgressResponse =
-            ExceptionUtil.dealException({ QueryProgressResponse(-100, "") }) {
-                BACTNetwork.queryProgress(viewModel.getProcessedImageId(), viewModel.getReceipt())
-            }
-        when (queryProgressResponse.statusCode) {
-            0 -> {
-                val imageUrl = queryProgressResponse.imageUrl
-                viewModel.setImageUrl(imageUrl)
-                val processedImageBitmap = AlbumIOUtil.getURLImage(imageUrl)?.let {
-                    viewModel.setProcessedBitmap(it)
-                    viewModel.setIsHasProcessedImage(true)
-                    val uri = AlbumIOUtil.addBitmapToAlbum(
-                        this,
-                        it,
-                        "image/png",
-                        Bitmap.CompressFormat.PNG
-                    )
-                    viewModel.setProcessedImageUri(uri)
-                }
-                Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
-                //更新UI
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.GONE
-                    binding.startUpload.visibility = View.VISIBLE
-                    binding.reset.visibility = View.VISIBLE
-                    viewModel.setIsClickable(true)
-                    Toast.makeText(
-                        this@MainActivity, "图片转换成功，已保存至系统相册！",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                return true
-            }
-            -1 -> {
-                Log.d(TAG, "图片转换还未完成")
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "图片转换还未完成", Toast.LENGTH_SHORT).show()
-                }
-                return false
-            }
-            else -> {
-                return false
             }
         }
     }

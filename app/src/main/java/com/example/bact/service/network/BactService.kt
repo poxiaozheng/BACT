@@ -1,39 +1,25 @@
 package com.example.bact.service.network
 
 import com.example.bact.model.response.PostOriginImageResponse
-import com.example.bact.model.response.PostOriginImageResponse2
-import com.example.bact.model.response.QueryProgressResponse
-import okhttp3.MultipartBody
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface BACTService {
-
-//    @POST("/bact/postOriginImage")
-//    suspend fun postOriginImage(
-//        @Body pictureArray: ByteArray,
-//        @Query("scale") scale: Int,
-//        @Query("noiseGrade") noiseGrade: Int
-//    ): PostOriginImageResponse
-
-//    @Multipart
-//    @POST("/bact/postOriginImage")
-//    suspend fun postOriginImage(
-//        @Part pictureArray: MultipartBody.Part,
-//        @Query("scale") scale: Int,
-//        @Query("noiseGrade") noiseGrade: Int
-//    ): PostOriginImageResponse
 
     @POST("/bact/postOriginImage")
     suspend fun postOriginImage(
         @Body pictureArray: ByteArray,
         @Query("scale") scale: Int,
-        @Query("noiseGrade") noiseGrade: Int
-    ): PostOriginImageResponse2
+        @Query("noiseGrade") noiseGrade: Int  ,
+        @Header("Content-Type") contentType:String
+    ): PostOriginImageResponse
 
-    @GET("/bact/queryProgress")
-    suspend fun queryProgress(
-        @Query("imageId") imageId: String,
-        @Query("receipt") receipt: String
-    ): QueryProgressResponse
+//    @GET("/bact/queryProgress")
+//    suspend fun queryProgress(
+//        @Query("imageId") imageId: String,
+//        @Query("receipt") receipt: String
+//    ): QueryProgressResponse
 
 }
