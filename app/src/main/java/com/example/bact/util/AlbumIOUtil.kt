@@ -11,7 +11,10 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.*
+import java.net.HttpURLConnection
 import java.net.URL
 
 object AlbumIOUtil {
@@ -153,21 +156,30 @@ object AlbumIOUtil {
         return bitmap
     }
 
-    fun getURLImage(url: String): Bitmap? {
+    fun getBitmapMimeType(uri: Uri):String{
+        val options = BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        BitmapFactory.decodeFile(uri.path, options)
+        return  options.outMimeType
+    }
+
+    fun getBitmapFromUrl(url: String): Bitmap? {
         var bitmap: Bitmap? = null
-        ExceptionUtil.wrapException {
-            val imageUrl = URL(url)
-            val httpURLConnection = imageUrl.openConnection()
-            httpURLConnection.apply {
-                connectTimeout = 5000
-                doInput = false
-                useCaches = false
-                connect()
-                val inputStream = httpURLConnection.getInputStream()
-                bitmap = BitmapFactory.decodeStream(inputStream)
+            ExceptionUtil.wrapException {
+                val imageUrl = URL(url)
+                val httpURLConnection = imageUrl.openConnection() as HttpURLConnection
+                val length: Int = httpURLConnection.contentLength
+                httpURLConnection.apply {
+                    connectTimeout = 5000
+                    connect()
+                }
+                // this call is on Main Thread.
+                val inputStream = httpURLConnection.inputStream
+                val bufferedInputStream = BufferedInputStream(inputStream, length)
+                bitmap = BitmapFactory.decodeStream(bufferedInputStream)
+                bufferedInputStream.close()
                 inputStream.close()
             }
-        }
         return bitmap
     }
 

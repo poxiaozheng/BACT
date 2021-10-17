@@ -2,6 +2,7 @@ package com.example.bact.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestListener
+import com.example.bact.BACTApplication
 import com.example.bact.R
 import com.example.bact.databinding.ActivityMainBinding
 import com.example.bact.model.response.PostOriginImageResponse
@@ -21,7 +25,9 @@ import com.example.bact.service.network.BACTNetwork
 import com.example.bact.util.AlbumIOUtil
 import com.example.bact.util.DisplayUtil
 import com.example.bact.util.ExceptionUtil
+import com.google.gson.Gson
 import kotlinx.coroutines.*
+import okhttp3.*
 import java.util.*
 import kotlin.properties.Delegates
 
@@ -98,9 +104,10 @@ class MainActivity : BaseActivity() {
 
         bindingClick()
 
-        viewModel.processedBitmap.observe(this){
+        viewModel.processedBitmap.observe(this) {
             processedImage.setImageBitmap(it)
         }
+
     }
 
     private fun bindingClick() {
@@ -284,22 +291,32 @@ class MainActivity : BaseActivity() {
 
     private suspend fun postImage() {
         withContext(Dispatchers.IO) {
-            val pictureArray = AlbumIOUtil.bitmapToByteArray(
-                AlbumIOUtil.uriToBitmap(
-                    this@MainActivity,
-                    viewModel.getOriginImageUri()!!
-                )
+            val bitmap = AlbumIOUtil.uriToBitmap(
+                this@MainActivity,
+                viewModel.getOriginImageUri()!!
             )
+            val pictureArray = AlbumIOUtil.bitmapToByteArray(bitmap)
             val scale = viewModel.scale.value
             val noiseGrade = viewModel.noiseGrade.value
             if (scale != null && noiseGrade != null) {
-                Log.d(TAG, "pictureArray:${ Arrays.toString(pictureArray)}")
                 Log.d(TAG, "scale:$scale")
                 Log.d(TAG, "noiseGrade:$noiseGrade")
+
+                val mediaType = MediaType.parse("image/jpg")
+                val requestBody = RequestBody.create(mediaType, pictureArray)
+                val request = Request.Builder()
+                    .url("http://192.168.88.194:8081/bact/postOriginImage?scale=$scale&noiseGrade=$noiseGrade")
+                    .method("POST", requestBody)
+                    .addHeader("Content-Type", "image/jpg")
+                    .build()
+
+                val response = BACTApplication.okHttpClient!!.newCall(request).execute()
+                Log.d(TAG, "response:$response")
+                val responseData = response.body()?.string()
+                val gson = Gson()
                 val postOriginImageResponse =
-                    ExceptionUtil.dealException({ PostOriginImageResponse(-100, "", "") }) {
-                        BACTNetwork.postOriginImage(pictureArray, scale, noiseGrade)
-                    }
+                    gson.fromJson(responseData, PostOriginImageResponse::class.java)
+
                 when (postOriginImageResponse.statusCode) {
                     0 -> {
                         val processedImageId = postOriginImageResponse.imageId
@@ -314,7 +331,7 @@ class MainActivity : BaseActivity() {
                             if (queryProgress()) {
                                 break
                             } else {
-                                delay(10000)
+                                delay(15000)
                             }
                         }
                     }
@@ -341,20 +358,34 @@ class MainActivity : BaseActivity() {
             0 -> {
                 val imageUrl = queryProgressResponse.imageUrl
                 viewModel.setImageUrl(imageUrl)
-                val processedImageBitmap = AlbumIOUtil.getURLImage(imageUrl)?.let {
-                    viewModel.setProcessedBitmap(it)
-                    viewModel.setIsHasProcessedImage(true)
-                    val uri = AlbumIOUtil.addBitmapToAlbum(
-                        this,
-                        it,
-                        "image/png",
-                        Bitmap.CompressFormat.PNG
-                    )
-                    viewModel.setProcessedImageUri(uri)
+
+                val imageRequest = Request.Builder().url(imageUrl).get().build()
+
+                val response = BACTApplication.okHttpClient?.newCall(imageRequest)?.execute()
+
+                val imageContent = response?.body()?.bytes()
+                if (imageContent != null) {
+                    val imageBitMap =
+                        BitmapFactory.decodeByteArray(imageContent, 0, imageContent.size, null)
+
+                    withContext(Dispatchers.Main) {
+                        viewModel.setProcessedBitmap(imageBitMap)
+                        processedImage.setImageBitmap(imageBitMap)
+                        viewModel.setIsHasProcessedImage(true)
+                        val uri = AlbumIOUtil.addBitmapToAlbum(
+                            this@MainActivity,
+                            imageBitMap,
+                            "image/png",
+                            Bitmap.CompressFormat.PNG
+                        )
+                        Log.d(TAG, "uri:$uri")
+                        viewModel.setProcessedImageUri(uri)
+                    }
                 }
-                Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
-                //更新UI
+
                 withContext(Dispatchers.Main) {
+                    Log.d(TAG, "图片转换成功，imageUrl：$imageUrl")
+                    //更新UI
                     binding.progressBar.visibility = View.GONE
                     binding.startUpload.visibility = View.VISIBLE
                     binding.reset.visibility = View.VISIBLE
