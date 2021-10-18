@@ -103,16 +103,43 @@ class MainActivity : BaseActivity() {
 
         bindingClick()
 
+        viewModelObserve()
+
+    }
+
+    private fun viewModelObserve() {
         viewModel.processedBitmap.observe(this) {
-            processedImage.setImageBitmap(it)
+            processedImage.apply {
+                setPadding(0, 0, 0, 0)
+                setImageBitmap(it)
+            }
         }
 
+        viewModel.scale.observe(this) {
+            when (it) {
+                2 -> selectTextView2X()
+                4 -> selectTextView4X()
+                8 -> selectTextView8X()
+                16 -> selectTextView16X()
+                else -> throw Exception("scale is not match!")
+            }
+        }
+
+        viewModel.noiseGrade.observe(this) {
+            when (it) {
+                0 -> selectTextViewNoise1()
+                1 -> selectTextViewNoise2()
+                2 -> selectTextViewNoise3()
+                3 -> selectTextViewNoise4()
+                else -> throw Exception("noiseGrade is not match!")
+            }
+        }
     }
 
     private fun bindingClick() {
         binding.startUpload.setOnClickListener {
             Log.d(TAG, "开始上传图片！")
-            if (!viewModel.isHasOriginImage.value!!) {
+            if (!viewModel.getIsHasOriginImage()) {
                 Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
             } else {
                 viewModel.setIsClickable(false)
@@ -130,8 +157,8 @@ class MainActivity : BaseActivity() {
         }
 
         originImage.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                if (viewModel.isHasOriginImage.value == true) {
+            if (viewModel.getIsClickable()) {
+                if (viewModel.getIsHasOriginImage()) {
                     Log.d(TAG, "originImage:enterImagePreview")
                     enterImagePreview(viewModel.getOriginImageUri()!!)
                 } else {
@@ -142,7 +169,7 @@ class MainActivity : BaseActivity() {
         }
 
         processedImage.setOnClickListener {
-            if (viewModel.isHasProcessedImage.value == true) {
+            if (viewModel.getIsHasProcessedImage()) {
                 Log.d(TAG, "processedImage:enterImagePreview")
                 enterImagePreview(viewModel.getProcessedImageUri()!!)
             }
@@ -162,8 +189,8 @@ class MainActivity : BaseActivity() {
         viewModel.setIsHasProcessedImage(false)
         viewModel.setOriginImageUri(null)
         viewModel.setProcessedImageUri(null)
-        resetScaleTextView()
-        resetNoiseGradeTextView()
+        viewModel.setScale(2)
+        viewModel.setNoiseGrade(0)
         binding.startUpload.text = "开始上传"
     }
 
@@ -198,36 +225,26 @@ class MainActivity : BaseActivity() {
         textView8X = binding.textView8X
         textView16X = binding.textView16X
 
-        when (viewModel.scale.value) {
-            2 -> selectTextView2X()
-            4 -> selectTextView4X()
-            8 -> selectTextView8X()
-            16 -> selectTextView16X()
-        }
-
         textView2X.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                resetScaleTextView()
+            if (viewModel.getIsClickable()) {
+                viewModel.setScale(2)
             }
         }
 
         textView4X.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextView4X()
+            if (viewModel.getIsClickable()) {
                 viewModel.setScale(4)
             }
         }
 
         textView8X.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextView8X()
+            if (viewModel.getIsClickable()) {
                 viewModel.setScale(8)
             }
         }
 
         textView16X.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextView16X()
+            if (viewModel.getIsClickable()) {
                 viewModel.setScale(16)
             }
         }
@@ -237,50 +254,30 @@ class MainActivity : BaseActivity() {
         textViewNoise3 = binding.textViewNoise3
         textViewNoise4 = binding.textViewNoise4
 
-        when (viewModel.noiseGrade.value) {
-            0 -> selectTextViewNoise1()
-            1 -> selectTextViewNoise2()
-            2 -> selectTextViewNoise3()
-            3 -> selectTextViewNoise4()
-        }
-
         textViewNoise1.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                resetNoiseGradeTextView()
+            if (viewModel.getIsClickable()) {
+                viewModel.setNoiseGrade(0)
             }
         }
 
         textViewNoise2.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextViewNoise2()
+            if (viewModel.getIsClickable()) {
                 viewModel.setNoiseGrade(1)
             }
         }
 
         textViewNoise3.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextViewNoise3()
+            if (viewModel.getIsClickable()) {
                 viewModel.setNoiseGrade(2)
             }
         }
 
         textViewNoise4.setOnClickListener {
-            if (viewModel.isClickable.value!!) {
-                selectTextViewNoise4()
+            if (viewModel.getIsClickable()) {
                 viewModel.setNoiseGrade(3)
             }
         }
 
-    }
-
-    private fun resetScaleTextView() {
-        selectTextView2X()
-        viewModel.setScale(2)
-    }
-
-    private fun resetNoiseGradeTextView() {
-        selectTextViewNoise1()
-        viewModel.setNoiseGrade(0)
     }
 
     override fun onDestroy() {
@@ -315,7 +312,7 @@ class MainActivity : BaseActivity() {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
                         }
-                        while (!viewModel.isHasProcessedImage.value!!) {
+                        while (!viewModel.getIsHasProcessedImage()) {
                             if (queryProgress()) {
                                 break
                             } else {
@@ -357,10 +354,6 @@ class MainActivity : BaseActivity() {
 
                     withContext(Dispatchers.Main) {
                         viewModel.setProcessedBitmap(imageBitMap)
-                        processedImage.apply {
-                            setPadding(0, 0, 0, 0)
-                            setImageBitmap(imageBitMap)
-                        }
                         viewModel.setIsHasProcessedImage(true)
                         val uri = AlbumIOUtil.addBitmapToAlbum(
                             this@MainActivity,

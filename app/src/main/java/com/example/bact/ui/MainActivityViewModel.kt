@@ -8,12 +8,9 @@ import androidx.lifecycle.ViewModel
 
 class MainActivityViewModel : ViewModel() {
 
-    private val _isHasOriginImage = MutableLiveData<Boolean>()
-    val isHasOriginImage: LiveData<Boolean> = _isHasOriginImage
+    private var isHasOriginImage = false
 
-    @Volatile
-    private var _isHasProcessedImage = MutableLiveData<Boolean>()
-    val isHasProcessedImage: LiveData<Boolean> = _isHasProcessedImage
+    private var isHasProcessedImage = false
 
     private val _scale = MutableLiveData<Int>()
     val scale: LiveData<Int> = _scale
@@ -24,9 +21,7 @@ class MainActivityViewModel : ViewModel() {
     private val _processedBitmap = MutableLiveData<Bitmap>()
     val processedBitmap: LiveData<Bitmap> = _processedBitmap
 
-    @Volatile
-    private var _isClickable = MutableLiveData<Boolean>()
-    val isClickable: LiveData<Boolean> = _isClickable
+    private var isClickable = true
 
     private var originImageUri: Uri? = null
     private var processedImageUri: Uri? = null
@@ -38,11 +33,8 @@ class MainActivityViewModel : ViewModel() {
     private lateinit var receipt: String
 
     init {
-        _isHasOriginImage.value = false
-        _isHasProcessedImage.value = false
         _scale.value = 2
         _noiseGrade.value = 0
-        _isClickable.value = true
     }
 
     fun getReceipt() = receipt
@@ -56,7 +48,6 @@ class MainActivityViewModel : ViewModel() {
     fun setProcessedImageId(processedImageId: String) {
         this.processedImageId = processedImageId
     }
-
 
     fun setProcessedBitmap(processedBitmap: Bitmap) {
         _processedBitmap.value = processedBitmap
@@ -78,16 +69,22 @@ class MainActivityViewModel : ViewModel() {
         processedImageUri = value
     }
 
+    fun getIsClickable() = isClickable
+
     fun setIsClickable(value: Boolean) {
-        _isClickable.value = value
+        isClickable = value
     }
 
-    fun setIsHasOriginImage(isHasOriginImage: Boolean) {
-        _isHasOriginImage.value = isHasOriginImage
+    fun getIsHasOriginImage() = isHasOriginImage
+
+    fun setIsHasOriginImage(value: Boolean) {
+        isHasOriginImage = value
     }
 
-    fun setIsHasProcessedImage(isHasProcessedImage: Boolean) {
-        _isHasProcessedImage.value = isHasProcessedImage
+    fun getIsHasProcessedImage() = isHasProcessedImage
+
+    fun setIsHasProcessedImage(value: Boolean) {
+        isHasProcessedImage = value
     }
 
     fun setScale(scale: Int) {
