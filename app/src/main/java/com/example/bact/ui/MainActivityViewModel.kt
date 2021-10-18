@@ -8,10 +8,6 @@ import androidx.lifecycle.ViewModel
 
 class MainActivityViewModel : ViewModel() {
 
-    companion object {
-        private const val TAG = "MainActivityViewModelTAG"
-    }
-
     private val _isHasOriginImage = MutableLiveData<Boolean>()
     val isHasOriginImage: LiveData<Boolean> = _isHasOriginImage
 

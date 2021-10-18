@@ -11,8 +11,11 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.example.bact.BACTApplication
+import com.example.bact.service.network.BACTNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Request
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -20,15 +23,6 @@ import java.net.URL
 object AlbumIOUtil {
 
     private const val TAG = "AlbumUtil"
-
-    private fun getRealPathFromURI(activity: Activity, uri: Uri?): String? {
-        val arr = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = activity.managedQuery(uri, arr, null, null, null)
-            ?: return uri?.path
-        val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-        cursor.moveToFirst()
-        return cursor.getString(columnIndex)
-    }
 
     fun getShareImageUri(activity: Activity): Uri? {
         val intent = activity.intent
@@ -40,8 +34,6 @@ object AlbumIOUtil {
                     try {
                         val uri = it.getParcelable(Intent.EXTRA_STREAM) as Uri?
                         Log.d(TAG, "uri:$uri")
-                        //val path = getRealPathFromURI(activity, uri)
-                        //Log.d(TAG, "path:$path")
                         return uri
                     } catch (e: Exception) {
                         Log.d(TAG, e.toString())
@@ -75,7 +67,7 @@ object AlbumIOUtil {
         bitmap: Bitmap,
         mimeType: String = "image/jpeg",
         compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
-    ) :Uri ?{
+    ): Uri? {
         val values = getContentValues(mimeType)
         val uri =
             context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
@@ -124,24 +116,7 @@ object AlbumIOUtil {
         bis.close()
     }
 
-    fun inputStreamToByteArray(inputStream: InputStream): ByteArray {
-        val buffer = ByteArray(1024)
-        var len = -1
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        len = inputStream.read(buffer)
-        ExceptionUtil.wrapException {
-            while (len != -1) {
-                byteArrayOutputStream.write(buffer, 0, len)
-                len = inputStream.read(buffer)
-            }
-        }
-        val data = byteArrayOutputStream.toByteArray()
-        byteArrayOutputStream.close()
-        inputStream.close()
-        return data
-    }
-
-    fun byteArrayToBitmap(byteArray: ByteArray, opts: BitmapFactory.Options?): Bitmap? {
+    fun byteArrayToBitmap(byteArray: ByteArray, opts: BitmapFactory.Options?): Bitmap {
         return if (opts != null) {
             BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size, opts)
         } else {
@@ -156,31 +131,10 @@ object AlbumIOUtil {
         return bitmap
     }
 
-    fun getBitmapMimeType(uri: Uri):String{
-        val options = BitmapFactory.Options()
-        options.inJustDecodeBounds = true
-        BitmapFactory.decodeFile(uri.path, options)
-        return  options.outMimeType
-    }
-
-    fun getBitmapFromUrl(url: String): Bitmap? {
-        var bitmap: Bitmap? = null
-            ExceptionUtil.wrapException {
-                val imageUrl = URL(url)
-                val httpURLConnection = imageUrl.openConnection() as HttpURLConnection
-                val length: Int = httpURLConnection.contentLength
-                httpURLConnection.apply {
-                    connectTimeout = 5000
-                    connect()
-                }
-                // this call is on Main Thread.
-                val inputStream = httpURLConnection.inputStream
-                val bufferedInputStream = BufferedInputStream(inputStream, length)
-                bitmap = BitmapFactory.decodeStream(bufferedInputStream)
-                bufferedInputStream.close()
-                inputStream.close()
-            }
-        return bitmap
+    fun getUrlImageByteArray(imageUrl: String): ByteArray? {
+        val imageRequest = Request.Builder().url(imageUrl).get().build()
+        val response = BACTNetwork.okHttpClient?.newCall(imageRequest)?.execute()
+        return response?.body()?.bytes()
     }
 
 }
