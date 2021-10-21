@@ -1,12 +1,10 @@
-package com.example.bact.ui
+package com.example.bact.ui.activity
 
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.example.bact.R
 import com.example.bact.util.DisplayUtil
 
 open class BaseActivity : AppCompatActivity() {

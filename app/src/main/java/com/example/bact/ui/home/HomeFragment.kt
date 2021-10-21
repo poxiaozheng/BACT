@@ -1,4 +1,4 @@
-package com.example.bact.ui
+package com.example.bact.ui.home
 
 import android.content.Intent
 import android.graphics.Bitmap
@@ -6,42 +6,45 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
-import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.example.bact.BACTApplication
 import com.example.bact.R
-import com.example.bact.databinding.ActivityMainBinding
-import com.example.bact.model.response.PostOriginImageResponse
+import com.example.bact.databinding.FragmentHomeBinding
 import com.example.bact.model.response.QueryProgressResponse
 import com.example.bact.service.network.BACTNetwork
 import com.example.bact.service.network.ServiceCreator
-import com.example.bact.util.AlbumIOUtil
+import com.example.bact.ui.activity.PreviewImageActivity
+import com.example.bact.ui.history.HistoryFragmentViewModel
+import com.example.bact.ui.history.HistoryFragmentViewModelFactory
+import com.example.bact.util.CommonUtil
 import com.example.bact.util.DisplayUtil
 import com.example.bact.util.ExceptionUtil
-import com.google.gson.Gson
+import com.example.bact.util.FileIOUtil
 import kotlinx.coroutines.*
-import okhttp3.*
-import java.util.*
 import kotlin.properties.Delegates
 
-class MainActivity : BaseActivity() {
+class HomeFragment : Fragment() {
 
-    companion object {
-        private const val TAG = "MainActivityTAG"
+    private val homeFragmentViewModel: HomeFragmentViewModel by activityViewModels()
+
+    private val historyFragmentViewModel: HistoryFragmentViewModel by activityViewModels {
+        HistoryFragmentViewModelFactory(BACTApplication.database.imageInfoDao())
     }
 
-    private var _binding: ActivityMainBinding? = null
-    private val binding
-        get() = _binding!!
-    private val viewModel: MainActivityViewModel by viewModels()
     private val scope = MainScope()
     private var padding by Delegates.notNull<Int>()
+    private var _binding: FragmentHomeBinding? = null
+    private val binding
+        get() = _binding!!
 
     private lateinit var textView2X: TextView
     private lateinit var textView4X: TextView
@@ -58,20 +61,31 @@ class MainActivity : BaseActivity() {
 
     private lateinit var openAlbumLauncher: ActivityResultLauncher<String>
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        _binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        initStatusBar(ContextCompat.getColor(this, R.color.white))
-        padding = DisplayUtil.dp2px(applicationContext, 40f).toInt()
+    companion object {
+        private const val TAG = "HomeFragment"
+
+        @JvmStatic
+        fun newInstance() = HomeFragment()
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        val layoutView = binding.root
         init()
+        return layoutView
     }
 
     private fun init() {
+
+        padding = DisplayUtil.dp2px(BACTApplication.appContext, 40f).toInt()
+
         originImage = binding.originCardView.image.apply {
-            if (viewModel.getOriginImageUri() != null) {
+            if (homeFragmentViewModel.getOriginImageUri() != null) {
                 setPadding(0, 0, 0, 0)
-                setImageURI(viewModel.getOriginImageUri())
+                setImageURI(homeFragmentViewModel.getOriginImageUri())
             } else {
                 setPadding(padding, 0, padding, 0)
                 setImageResource(R.drawable.camera_250)
@@ -85,9 +99,9 @@ class MainActivity : BaseActivity() {
             text = "原图"
         }
         processedImage = binding.processedCardView.image.apply {
-            if (viewModel.getProcessedImageUri() != null) {
+            if (homeFragmentViewModel.getProcessedImageUri() != null) {
                 setPadding(0, 0, 0, 0)
-                setImageURI(viewModel.getProcessedImageUri())
+                setImageURI(homeFragmentViewModel.getProcessedImageUri())
             } else {
                 setPadding(padding, 0, padding, 0)
                 setImageResource(R.drawable.processed_place_holder_250)
@@ -108,14 +122,14 @@ class MainActivity : BaseActivity() {
     }
 
     private fun viewModelObserve() {
-        viewModel.processedBitmap.observe(this) {
+        homeFragmentViewModel.processedBitmap.observe(viewLifecycleOwner) {
             processedImage.apply {
                 setPadding(0, 0, 0, 0)
                 setImageBitmap(it)
             }
         }
 
-        viewModel.scale.observe(this) {
+        homeFragmentViewModel.scale.observe(viewLifecycleOwner) {
             when (it) {
                 2 -> selectTextView2X()
                 4 -> selectTextView4X()
@@ -125,7 +139,7 @@ class MainActivity : BaseActivity() {
             }
         }
 
-        viewModel.noiseGrade.observe(this) {
+        homeFragmentViewModel.noiseGrade.observe(viewLifecycleOwner) {
             when (it) {
                 0 -> selectTextViewNoise1()
                 1 -> selectTextViewNoise2()
@@ -139,10 +153,10 @@ class MainActivity : BaseActivity() {
     private fun bindingClick() {
         binding.startUpload.setOnClickListener {
             Log.d(TAG, "开始上传图片！")
-            if (!viewModel.getIsHasOriginImage()) {
-                Toast.makeText(this, "还未选择原图！", Toast.LENGTH_SHORT).show()
+            if (!homeFragmentViewModel.getIsHasOriginImage()) {
+                Toast.makeText(requireContext(), "还未选择原图！", Toast.LENGTH_SHORT).show()
             } else {
-                viewModel.setIsClickable(false)
+                homeFragmentViewModel.setIsClickable(false)
                 it.visibility = View.GONE
                 binding.progressBar.visibility = View.VISIBLE
                 binding.reset.visibility = View.GONE
@@ -157,10 +171,10 @@ class MainActivity : BaseActivity() {
         }
 
         originImage.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                if (viewModel.getIsHasOriginImage()) {
+            if (homeFragmentViewModel.getIsClickable()) {
+                if (homeFragmentViewModel.getIsHasOriginImage()) {
                     Log.d(TAG, "originImage:enterImagePreview")
-                    enterImagePreview(viewModel.getOriginImageUri()!!)
+                    enterImagePreview(homeFragmentViewModel.getOriginImageUri()!!)
                 } else {
                     Log.d(TAG, "openAlbum")
                     openAlbum()
@@ -169,9 +183,9 @@ class MainActivity : BaseActivity() {
         }
 
         processedImage.setOnClickListener {
-            if (viewModel.getIsHasProcessedImage()) {
+            if (homeFragmentViewModel.getIsHasProcessedImage()) {
                 Log.d(TAG, "processedImage:enterImagePreview")
-                enterImagePreview(viewModel.getProcessedImageUri()!!)
+                enterImagePreview(homeFragmentViewModel.getProcessedImageUri()!!)
             }
         }
     }
@@ -185,17 +199,19 @@ class MainActivity : BaseActivity() {
             setPadding(padding, 0, padding, 0)
             setImageResource(R.drawable.processed_place_holder_250)
         }
-        viewModel.setIsHasOriginImage(false)
-        viewModel.setIsHasProcessedImage(false)
-        viewModel.setOriginImageUri(null)
-        viewModel.setProcessedImageUri(null)
-        viewModel.setScale(2)
-        viewModel.setNoiseGrade(0)
+        homeFragmentViewModel.apply {
+            setIsHasOriginImage(false)
+            setIsHasProcessedImage(false)
+            setOriginImageUri(null)
+            setProcessedImageUri(null)
+            setScale(2)
+            setNoiseGrade(0)
+        }
         binding.startUpload.text = "开始上传"
     }
 
     private fun enterImagePreview(uri: Uri) {
-        val intent = Intent(this@MainActivity, PreviewImageActivity::class.java)
+        val intent = Intent(requireActivity(), PreviewImageActivity::class.java)
         intent.putExtra("key", uri)
         startActivity(intent)
     }
@@ -205,14 +221,14 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initOriginImageFromAlbum() {
-        AlbumIOUtil.getShareImageUri(this)?.let {
+        FileIOUtil.getShareImageUri(requireActivity())?.let {
             setOriginImageFromAlbum(it)
         }
     }
 
     private fun setOriginImageFromAlbum(uri: Uri) {
-        viewModel.setOriginImageUri(uri)
-        viewModel.setIsHasOriginImage(true)
+        homeFragmentViewModel.setOriginImageUri(uri)
+        homeFragmentViewModel.setIsHasOriginImage(true)
         originImage.apply {
             setPadding(0, 0, 0, 0)
             setImageURI(uri)
@@ -226,26 +242,26 @@ class MainActivity : BaseActivity() {
         textView16X = binding.textView16X
 
         textView2X.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setScale(2)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setScale(2)
             }
         }
 
         textView4X.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setScale(4)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setScale(4)
             }
         }
 
         textView8X.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setScale(8)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setScale(8)
             }
         }
 
         textView16X.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setScale(16)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setScale(16)
             }
         }
 
@@ -255,64 +271,67 @@ class MainActivity : BaseActivity() {
         textViewNoise4 = binding.textViewNoise4
 
         textViewNoise1.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setNoiseGrade(0)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setNoiseGrade(0)
             }
         }
 
         textViewNoise2.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setNoiseGrade(1)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setNoiseGrade(1)
             }
         }
 
         textViewNoise3.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setNoiseGrade(2)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setNoiseGrade(2)
             }
         }
 
         textViewNoise4.setOnClickListener {
-            if (viewModel.getIsClickable()) {
-                viewModel.setNoiseGrade(3)
+            if (homeFragmentViewModel.getIsClickable()) {
+                homeFragmentViewModel.setNoiseGrade(3)
             }
         }
 
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        scope.cancel()
-        _binding = null
-    }
-
     private suspend fun postImage() {
         withContext(Dispatchers.IO) {
-            val bitmap = AlbumIOUtil.uriToBitmap(
-                this@MainActivity,
-                viewModel.getOriginImageUri()!!
+            val bitmapWithMime = FileIOUtil.uriToBitmapWithMime(
+                requireContext(),
+                homeFragmentViewModel.getOriginImageUri()!!
             )
-            val pictureArray = AlbumIOUtil.bitmapToByteArray(bitmap)
-            val scale = viewModel.scale.value
-            val noiseGrade = viewModel.noiseGrade.value
+            val mimeType = bitmapWithMime.mimeTyp
+            Log.d(TAG, "mimeType:$mimeType")
+            Log.d(TAG, "bitmapSize:${bitmapWithMime.bitmap.byteCount}")
+            val pictureArray = FileIOUtil.bitmapToByteArray(bitmapWithMime.bitmap)
+            val scale = homeFragmentViewModel.scale.value
+            val noiseGrade = homeFragmentViewModel.noiseGrade.value
+//            val imageInfo = ImageInfo(pictureArray,scale,
+//                noiseGrade,CommonUtil.timeStampToData(System.currentTimeMillis()),"a.png")
+            //BACTApplication.database.imageInfoDao().insert()
             if (scale != null && noiseGrade != null) {
                 Log.d(TAG, "scale:$scale")
                 Log.d(TAG, "noiseGrade:$noiseGrade")
-
                 val postOriginImageResponse =
-                    BACTNetwork.startOkhttpRequest(pictureArray, scale, noiseGrade)
+                    BACTNetwork.startOkhttpRequest(pictureArray, scale, noiseGrade, mimeType)
 
                 when (postOriginImageResponse.statusCode) {
                     0 -> {
                         val processedImageId = postOriginImageResponse.imageId
-                        viewModel.setProcessedImageId(processedImageId)
+                        homeFragmentViewModel.setProcessedImageId(processedImageId)
                         val receipt = postOriginImageResponse.receipt
-                        viewModel.setReceipt(receipt)
+                        homeFragmentViewModel.setReceipt(receipt)
                         Log.d(TAG, "图片上传成功，imageID：$processedImageId，receipt：$receipt")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(this@MainActivity, "图片上传成功", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireContext(),
+                                "图片上传成功,请耐心等待图片生成",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                        while (!viewModel.getIsHasProcessedImage()) {
+                        while (!homeFragmentViewModel.getIsHasProcessedImage()) {
                             if (queryProgress()) {
                                 break
                             } else {
@@ -323,7 +342,7 @@ class MainActivity : BaseActivity() {
                     -1 -> {
                         Log.d(TAG, "图片上传失败")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(this@MainActivity, "图片上传失败", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), "图片上传失败", Toast.LENGTH_SHORT).show()
                         }
                     }
                     else -> {
@@ -337,31 +356,32 @@ class MainActivity : BaseActivity() {
     private suspend fun queryProgress(): Boolean {
         val queryProgressResponse =
             ExceptionUtil.dealException({ QueryProgressResponse(-100, "") }) {
-                BACTNetwork.queryProgress(viewModel.getProcessedImageId(), viewModel.getReceipt())
+                BACTNetwork.queryProgress(
+                    homeFragmentViewModel.getProcessedImageId(),
+                    homeFragmentViewModel.getReceipt()
+                )
             }
         when (queryProgressResponse.statusCode) {
             0 -> {
                 val imageUrl =
                     ServiceCreator.getServiceBaseUrl() + "/bact/output/" + queryProgressResponse.imageUrl
-                viewModel.setImageUrl(imageUrl)
+                homeFragmentViewModel.setImageUrl(imageUrl)
 
-                val imageContent = AlbumIOUtil.getUrlImageByteArray(imageUrl)
+                val imageContent = FileIOUtil.getUrlImageByteArray(imageUrl)
 
                 if (imageContent != null) {
                     val opts = BitmapFactory.Options()
                     opts.inPreferredConfig = Bitmap.Config.ARGB_8888
-                    val imageBitMap = AlbumIOUtil.byteArrayToBitmap(imageContent, opts)
+                    val imageBitMap = FileIOUtil.byteArrayToBitmap(imageContent, opts)
 
                     withContext(Dispatchers.Main) {
-                        viewModel.setProcessedBitmap(imageBitMap)
-                        viewModel.setIsHasProcessedImage(true)
-                        val uri = AlbumIOUtil.addBitmapToAlbum(
-                            this@MainActivity,
-                            imageBitMap,
-                            "image/png",
-                            Bitmap.CompressFormat.PNG
+                        homeFragmentViewModel.setProcessedBitmap(imageBitMap)
+                        homeFragmentViewModel.setIsHasProcessedImage(true)
+                        val uri = FileIOUtil.addBitmapToAlbum(
+                            requireContext(),
+                            imageBitMap
                         )
-                        viewModel.setProcessedImageUri(uri)
+                        homeFragmentViewModel.setProcessedImageUri(uri)
                     }
                 }
 
@@ -370,12 +390,22 @@ class MainActivity : BaseActivity() {
                     binding.progressBar.visibility = View.GONE
                     binding.startUpload.visibility = View.VISIBLE
                     binding.reset.visibility = View.VISIBLE
-                    viewModel.setIsClickable(true)
+                    homeFragmentViewModel.setIsClickable(true)
                     Toast.makeText(
-                        this@MainActivity, "图片转换成功，已保存至系统相册！",
+                        requireContext(), "图片转换成功，已保存至系统相册！",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
+                val date = CommonUtil.timeStampToData(System.currentTimeMillis())
+                historyFragmentViewModel.insertItem(
+                    historyFragmentViewModel.newItem(
+                        imageContent!!,
+                        homeFragmentViewModel.scale.value!!,
+                        homeFragmentViewModel.noiseGrade.value!!,
+                        date,
+                        imageUrl
+                    )
+                )
                 return true
             }
             -1 -> {
@@ -444,4 +474,9 @@ class MainActivity : BaseActivity() {
         textViewNoise4.isSelected = true
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        scope.cancel()
+        _binding = null
+    }
 }

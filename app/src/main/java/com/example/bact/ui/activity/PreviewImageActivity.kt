@@ -1,4 +1,4 @@
-package com.example.bact.ui
+package com.example.bact.ui.activity
 
 import android.graphics.Color
 import android.net.Uri

@@ -1,4 +1,4 @@
-package com.example.bact.ui
+package com.example.bact.ui.home
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -6,11 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class MainActivityViewModel : ViewModel() {
-
-    private var isHasOriginImage = false
-
-    private var isHasProcessedImage = false
+class HomeFragmentViewModel : ViewModel() {
 
     private val _scale = MutableLiveData<Int>()
     val scale: LiveData<Int> = _scale
@@ -21,9 +17,14 @@ class MainActivityViewModel : ViewModel() {
     private val _processedBitmap = MutableLiveData<Bitmap>()
     val processedBitmap: LiveData<Bitmap> = _processedBitmap
 
+    private var isHasOriginImage = false
+
+    private var isHasProcessedImage = false
+
     private var isClickable = true
 
     private var originImageUri: Uri? = null
+
     private var processedImageUri: Uri? = null
 
     private lateinit var imageUrl: String

@@ -6,12 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import com.example.bact.BACTApplication
+import com.example.bact.model.entity.BitmapWithMime
 import com.example.bact.service.network.BACTNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,7 +22,7 @@ import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 
-object AlbumIOUtil {
+object FileIOUtil {
 
     private const val TAG = "AlbumUtil"
 
@@ -46,7 +48,7 @@ object AlbumIOUtil {
 
     private fun getContentValues(mimeType: String): ContentValues {
         val values = ContentValues()
-        val displayName = System.currentTimeMillis().toString()
+        val displayName = CommonUtil.timeStampToData(System.currentTimeMillis())
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -65,8 +67,8 @@ object AlbumIOUtil {
     fun addBitmapToAlbum(
         context: Context,
         bitmap: Bitmap,
-        mimeType: String = "image/jpeg",
-        compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
+        mimeType: String = "image/png",
+        compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
     ): Uri? {
         val values = getContentValues(mimeType)
         val uri =
@@ -93,7 +95,7 @@ object AlbumIOUtil {
     fun writeInputStreamToAlbum(
         context: Context,
         inputStream: InputStream,
-        mimeType: String = "image/jpeg"
+        mimeType: String = "image/png"
     ) {
         val values = getContentValues(mimeType)
         val bis = BufferedInputStream(inputStream)
@@ -124,11 +126,20 @@ object AlbumIOUtil {
         }
     }
 
-    fun uriToBitmap(context: Context, uri: Uri): Bitmap {
+//    fun uriToBitmap(context: Context, uri: Uri): Bitmap {
+//        val fd = context.contentResolver.openFileDescriptor(uri, "r")
+//        val bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor)
+//        fd?.close()
+//        return bitmap
+//    }
+
+    fun uriToBitmapWithMime(context: Context, uri: Uri): BitmapWithMime {
         val fd = context.contentResolver.openFileDescriptor(uri, "r")
-        val bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor)
+        val opts = BitmapFactory.Options()
+        val bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor, Rect(), opts)
         fd?.close()
-        return bitmap
+        val mimeType = opts.outMimeType
+        return BitmapWithMime(bitmap, mimeType)
     }
 
     fun getUrlImageByteArray(imageUrl: String): ByteArray? {

@@ -1,6 +1,5 @@
 package com.example.bact.service.network
 
-import com.example.bact.BACTApplication
 import com.example.bact.model.response.PostOriginImageResponse
 import com.google.gson.Gson
 import okhttp3.MediaType
@@ -27,17 +26,18 @@ object BACTNetwork {
     fun startOkhttpRequest(
         pictureArray: ByteArray,
         scale: Int,
-        noiseGrade: Int
+        noiseGrade: Int,
+        mimeType:String
     ): PostOriginImageResponse {
-        val mediaType = MediaType.parse("image/jpg")
+        val mediaType = MediaType.parse(mimeType)
         val requestBody = RequestBody.create(mediaType, pictureArray)
         val request = Request.Builder()
             .url(ServiceCreator.getServiceBaseUrl() + "/bact/postOriginImage?scale=$scale&noiseGrade=$noiseGrade")
             .method("POST", requestBody)
-            .addHeader("Content-Type", "image/jpg")
+            .addHeader("Content-Type", mimeType)
             .build()
 
-        val response = BACTNetwork.okHttpClient!!.newCall(request).execute()
+        val response = okHttpClient.newCall(request).execute()
         val responseData = response.body()?.string()
         val gson = Gson()
         return gson.fromJson(responseData, PostOriginImageResponse::class.java)
