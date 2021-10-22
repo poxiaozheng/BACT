@@ -35,8 +35,8 @@ class ImageInfoListAdapter :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: ImageInfo) {
             binding.apply {
-                scaleTextView.text = item.scale.toString()
-                noiseGradeTextView.text = item.noiseGrade.toString()
+                scaleTextView.text = "scale：${item.scale}"
+                noiseGradeTextView.text = "deNoiseGrade：${item.noiseGrade}"
                 dateTextView.text = item.date
                 imageNameTextView.text = item.imageName
             }
