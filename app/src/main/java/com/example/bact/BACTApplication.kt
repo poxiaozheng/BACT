@@ -6,11 +6,9 @@ import com.example.bact.model.database.ImageInfoRoomDatabase
 import okhttp3.OkHttpClient
 
 class BACTApplication : Application() {
-
-    val database: ImageInfoRoomDatabase by lazy { ImageInfoRoomDatabase.getDatabase() }
-
     companion object {
         lateinit var appContext: Context
+        val database: ImageInfoRoomDatabase by lazy { ImageInfoRoomDatabase.getDatabase() }
     }
 
     override fun onCreate() {

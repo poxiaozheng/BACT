@@ -37,7 +37,7 @@ class HomeFragment : Fragment() {
     private val homeFragmentViewModel: HomeFragmentViewModel by activityViewModels()
 
     private val historyFragmentViewModel: HistoryFragmentViewModel by activityViewModels {
-        HistoryFragmentViewModelFactory((activity?.application as BACTApplication).database.imageInfoDao())
+        HistoryFragmentViewModelFactory(BACTApplication.database.imageInfoDao())
     }
 
     private val scope = MainScope()

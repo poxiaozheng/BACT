@@ -1,17 +1,17 @@
 package com.example.bact.adapter
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bact.databinding.HistoryRecyclerviewItemBinding
 import com.example.bact.model.database.ImageInfo
-import com.example.bact.util.FileIOUtil
 
-class ImageInfoListAdapter :
-    RecyclerView.Adapter<ImageInfoListAdapter.ViewHolder>() {
+class ImageInfoListAdapter(private val onItemClicked: (View, ImageInfo) -> Unit) :
+    RecyclerView.Adapter<ImageInfoListAdapter.ViewHolder>(){
 
     private var dataSourceList = listOf<ImageInfo>()
 
@@ -22,6 +22,11 @@ class ImageInfoListAdapter :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val current = dataSourceList[position]
         holder.bind(current)
+        holder.itemView.setOnLongClickListener{
+            Log.d("ImageInfoListAdapter","setOnLongClickListener")
+            onItemClicked(holder.itemView,current)
+            false
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -33,6 +38,7 @@ class ImageInfoListAdapter :
 
     class ViewHolder(private var binding: HistoryRecyclerviewItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
+        @SuppressLint("SetTextI18n")
         fun bind(item: ImageInfo) {
             binding.apply {
                 scaleTextView.text = "scale：${item.scale}"
@@ -46,4 +52,5 @@ class ImageInfoListAdapter :
     override fun getItemCount(): Int {
         return dataSourceList.size
     }
+
 }
