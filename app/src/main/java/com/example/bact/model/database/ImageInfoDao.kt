@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ImageInfoDao {
 
-    @Query("SELECT * from imageInfo ORDER BY imageName ASC  ")
+    @Query("SELECT * from imageInfo ORDER BY imageName ASC")
     fun getItems(): Flow<List<ImageInfo>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

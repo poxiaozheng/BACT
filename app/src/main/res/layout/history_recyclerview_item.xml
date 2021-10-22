@@ -8,13 +8,13 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/camera_250" />
+        app:srcCompat="@drawable/launcher" />
 
     <TextView
         android:id="@+id/scaleTextView"
@@ -23,7 +23,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="4dp"
         android:text="TextView"
-        android:textSize="20sp"
+        android:textSize="14sp"
         app:layout_constraintStart_toEndOf="@+id/imageView"
         app:layout_constraintTop_toTopOf="@+id/imageView" />
 
@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:text="TextView"
-        android:textSize="20sp"
+        android:textSize="14sp"
         app:layout_constraintStart_toEndOf="@+id/scaleTextView"
         app:layout_constraintTop_toTopOf="@+id/scaleTextView" />
 
@@ -44,7 +44,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginBottom="4dp"
         android:text="TextView"
-        android:textSize="20sp"
+        android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="@+id/imageView"
         app:layout_constraintStart_toEndOf="@+id/imageView" />
 
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:text="TextView"
-        android:textSize="20sp"
+        android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="@+id/dateTextView"
         app:layout_constraintStart_toEndOf="@+id/dateTextView" />
 </androidx.constraintlayout.widget.ConstraintLayout>

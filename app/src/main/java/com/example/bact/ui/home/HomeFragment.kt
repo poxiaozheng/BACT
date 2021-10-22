@@ -37,7 +37,7 @@ class HomeFragment : Fragment() {
     private val homeFragmentViewModel: HomeFragmentViewModel by activityViewModels()
 
     private val historyFragmentViewModel: HistoryFragmentViewModel by activityViewModels {
-        HistoryFragmentViewModelFactory(BACTApplication.database.imageInfoDao())
+        HistoryFragmentViewModelFactory((activity?.application as BACTApplication).database.imageInfoDao())
     }
 
     private val scope = MainScope()
@@ -379,6 +379,7 @@ class HomeFragment : Fragment() {
                         homeFragmentViewModel.setIsHasProcessedImage(true)
                         val uri = FileIOUtil.addBitmapToAlbum(
                             requireContext(),
+                            queryProgressResponse.imageUrl,
                             imageBitMap
                         )
                         homeFragmentViewModel.setProcessedImageUri(uri)
@@ -399,11 +400,10 @@ class HomeFragment : Fragment() {
                 val date = CommonUtil.timeStampToData(System.currentTimeMillis())
                 historyFragmentViewModel.insertItem(
                     historyFragmentViewModel.newItem(
-                        imageContent!!,
                         homeFragmentViewModel.scale.value!!,
                         homeFragmentViewModel.noiseGrade.value!!,
                         date,
-                        imageUrl
+                        queryProgressResponse.imageUrl
                     )
                 )
                 return true

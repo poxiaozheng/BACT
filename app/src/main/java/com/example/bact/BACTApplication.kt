@@ -7,8 +7,9 @@ import okhttp3.OkHttpClient
 
 class BACTApplication : Application() {
 
+    val database: ImageInfoRoomDatabase by lazy { ImageInfoRoomDatabase.getDatabase() }
+
     companion object {
-        val database: ImageInfoRoomDatabase by lazy { ImageInfoRoomDatabase.getDatabase() }
         lateinit var appContext: Context
     }
 

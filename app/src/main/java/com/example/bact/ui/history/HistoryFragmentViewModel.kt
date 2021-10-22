@@ -22,19 +22,21 @@ class HistoryFragmentViewModel(private val imageInfoDao: ImageInfoDao) : ViewMod
     }
 
     fun newItem(
-        imageByteArray: ByteArray,
         scale: Int,
         noiseGrade: Int,
         date: String,
         imageName: String
     ): ImageInfo {
         return ImageInfo(
-            imageByteArray = imageByteArray,
             scale = scale,
             noiseGrade = noiseGrade,
             date = date,
             imageName = imageName
         )
+    }
+
+    fun addNewItem(scale: Int, noiseGrade: Int, date: String, imageName: String) {
+        insertItem(newItem(scale, noiseGrade, date, imageName))
     }
 }
 

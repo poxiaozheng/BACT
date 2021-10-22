@@ -46,9 +46,8 @@ object FileIOUtil {
         return null
     }
 
-    private fun getContentValues(mimeType: String): ContentValues {
+    private fun getContentValues(displayName: String, mimeType: String): ContentValues {
         val values = ContentValues()
-        val displayName = CommonUtil.timeStampToData(System.currentTimeMillis())
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -66,11 +65,12 @@ object FileIOUtil {
 
     fun addBitmapToAlbum(
         context: Context,
+        displayName: String,
         bitmap: Bitmap,
         mimeType: String = "image/png",
         compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
     ): Uri? {
-        val values = getContentValues(mimeType)
+        val values = getContentValues(displayName, mimeType)
         val uri =
             context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
         if (uri != null) {
@@ -94,10 +94,11 @@ object FileIOUtil {
 
     fun writeInputStreamToAlbum(
         context: Context,
+        displayName: String,
         inputStream: InputStream,
         mimeType: String = "image/png"
     ) {
-        val values = getContentValues(mimeType)
+        val values = getContentValues(displayName, mimeType)
         val bis = BufferedInputStream(inputStream)
         val uri =
             context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
