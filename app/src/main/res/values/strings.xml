@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BACT</string>
+    <string name="delete_item">点击删除该项</string>
 </resources>
