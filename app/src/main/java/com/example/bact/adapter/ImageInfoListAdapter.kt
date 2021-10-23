@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.example.bact.BACTApplication
 import com.example.bact.databinding.HistoryRecyclerviewItemBinding
 import com.example.bact.model.database.ImageInfo
 
@@ -41,8 +42,8 @@ class ImageInfoListAdapter(private val onItemClicked: (View, ImageInfo) -> Unit)
         @SuppressLint("SetTextI18n")
         fun bind(item: ImageInfo) {
             binding.apply {
-                scaleTextView.text = "scale：${item.scale}"
-                noiseGradeTextView.text = "deNoiseGrade：${item.noiseGrade}"
+                scaleTextView.text = "放大倍数：${item.scale}"
+                noiseGradeTextView.text = "降噪程度：${BACTApplication.hashMap[item.noiseGrade]}"
                 dateTextView.text = item.date
                 imageNameTextView.text = item.imageName
             }

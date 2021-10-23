@@ -7,6 +7,14 @@ import okhttp3.OkHttpClient
 
 class BACTApplication : Application() {
     companion object {
+        val hashMap : HashMap<Int,String> by lazy {
+            HashMap<Int,String>().apply {
+                this[0] = "无"
+                this[1] = "低"
+                this[2] = "中"
+                this[3] = "高"
+            }
+        }
         lateinit var appContext: Context
         val database: ImageInfoRoomDatabase by lazy { ImageInfoRoomDatabase.getDatabase() }
     }
