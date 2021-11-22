@@ -1,17 +1,13 @@
 package com.example.bact.ui.history
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.PopupMenu
-import android.widget.PopupWindow
-import androidx.appcompat.view.menu.MenuPopupHelper
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,8 +16,6 @@ import com.example.bact.R
 import com.example.bact.adapter.ImageInfoListAdapter
 import com.example.bact.databinding.FragmentHistoryBinding
 import com.example.bact.model.database.ImageInfo
-import com.example.bact.util.DisplayUtil
-import java.lang.reflect.Field
 
 
 class HistoryFragment : Fragment() {

@@ -1,6 +1,7 @@
 package com.example.bact.ui.activity
 
 import android.os.Bundle
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModel
